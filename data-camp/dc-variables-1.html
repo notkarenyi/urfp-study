@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang='en'>
+<head>
+    <meta charset="UTF-8">
+    <title>Variables 1</title>
+    <!--DataCamp Light script-->
+    <script async src="https://cdn.jsdelivr.net/gh/uclatall/datacamp-light@build/dist/dcl-react.js"></script>
+</head>
+<body>
+  <!--DataCamp window-->
+  <div data-datacamp-exercise data-lang="r" data-show-run-button=true data-show-solution-before=false data-no-lazy-load=true>
+    <!--Prerun R environment-->
+    <code data-type="pre-exercise-code">
+      packages <- c("mosaic", "Lock5withR", "Lock5Data", "supernova", "ggformula")
+      lapply(packages, library, character.only = T)
+
+    </code>
+    <!--Student view-->
+    <code data-type="sample-code">
+      # This creates an object, pi, that stores the value of pi
+        pi = 3.14159265358979
+    
+      # Type pi to print the contents of pi below
+        
+    </code>
+    <!--Solution environment-->
+    <code data-type="solution">
+        
+      # This creates an object, pi, that stores the value of pi 
+        pi = 3.14159265358979
+    
+      # Type "pi" to print the contents of pi
+        pi
+        
+    </code>
+    <!--Submission correctness tests and feedback-->
+    <code data-type="sct">
+        ex() %>% check_object("pi") %>% check_equal() 
+        ex() %>% check_output_expr("pi")
+
+    </code>
+  </div>
+</body>
+</html>

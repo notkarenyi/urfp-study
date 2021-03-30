@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang='en'>
+<head>
+    <meta charset="UTF-8">
+    <title>Operators 2</title>
+    <!--DataCamp Light script-->
+    <script async src="https://cdn.jsdelivr.net/gh/uclatall/datacamp-light@build/dist/dcl-react.js"></script>
+</head>
+<body>
+  <!--DataCamp window-->
+  <div data-datacamp-exercise data-lang="r" data-show-run-button=false data-show-solution-before=false data-no-lazy-load=true>
+    <!--Prerun R environment-->
+    <code data-type="pre-exercise-code">
+      packages <- c("mosaic", "Lock5withR", "Lock5Data", "supernova", "ggformula")
+      lapply(packages, library, character.only = T)
+
+    </code>
+    <!--Student view-->
+    <code data-type="sample-code">
+      # Type 100 * 2 + 5 below
+        
+        
+      # Now type 100 * (2 + 5)
+        
+
+    </code>
+    <!--Solution environment-->
+    <code data-type="solution">
+      # Type 100 * 2 + 5 below
+        100 * 2 + 5
+        
+      # Now type 100 * (2 + 5)
+        100 * (2 + 5)
+
+    </code>
+    <!--Submission correctness tests and feedback-->
+    <code data-type="sct">
+      ex() %>% check_output_expr("100 * 2 + 5")
+      ex() %>% check_output_expr("100 * (2 + 5)")
+
+    </code>
+  </div>
+</body>
+</html>

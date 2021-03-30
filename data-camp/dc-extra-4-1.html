@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang='en'>
+    
+<head>
+    <meta charset="UTF-8">
+    <title>Extra 4-1</title>
+    <!--DataCamp Light script-->
+    <script async src="https://cdn.jsdelivr.net/gh/uclatall/datacamp-light@build/dist/dcl-react.js"></script>
+</head>
+    
+<body>
+  <!--DataCamp window-->
+  <div data-datacamp-exercise data-lang="r" data-show-run-button=true data-show-solution-before=false data-no-lazy-load=true>
+      
+    <!--Prerun R environment-->
+    <code data-type="pre-exercise-code">
+      packages <- c("mosaic", "Lock5withR", "Lock5Data", "supernova", "ggformula")
+      lapply(packages, library, character.only = T)
+      tracker <- read.csv("https://docs.google.com/spreadsheets/d/e/2PACX-1vRlxWBQO0juGS4qYwHWdNp07qYwCD7gGs8snnERrweP46WpZXLiQTqgvZTT2GZzm5u52peaUH3e5obT/pub?output=csv")
+    </code>
+      
+    <!--Student view-->
+    <code data-type="sample-code">
+     # Use `gf_point()` to find out whether `heart_rate` and `distance` are related. 
+        
+        
+
+    </code>
+      
+      
+    <!--Solution environment-->
+    <code data-type="solution">
+     # There are different possible solutions 
+        
+     gf_point(heart_rate ~ distance, data = tracker)
+        
+
+    </code>
+      
+    <!--Submission correctness tests and feedback-->
+    <code data-type="sct">
+    sol_2 <- "gf_point(distance ~ heart_rate, data = tracker)"
+    sol_3 <- "gf_point(tracker$distance ~ tracker$heart_rate)"
+    sol_4 <- "gf_point(tracker$heart_rate ~ tracker$distance)"
+             
+            ex() %>% check_or(
+                check_function(., "gf_point") %>%
+                    check_result() %>% check_equal(),
+                override_solution(., sol_2) %>%
+                check_function(., "gf_point") %>%
+                    check_result() %>% check_equal()
+            )
+        
+    </code>
+  </div>
+</body>
+</html>

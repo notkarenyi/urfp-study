@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang='en'>
+<head>
+    <meta charset="UTF-8">
+    <title>Operators 4</title>
+    <!--DataCamp Light script-->
+    <script async src="https://cdn.jsdelivr.net/gh/uclatall/datacamp-light@build/dist/dcl-react.js"></script>
+</head>
+<body>
+  <!--DataCamp window-->
+  <div data-datacamp-exercise data-lang="r" data-show-run-button=false data-show-solution-before=false data-no-lazy-load=true>
+    <!--Prerun R environment-->
+    <code data-type="pre-exercise-code">
+      packages <- c("mosaic", "Lock5withR", "Lock5Data", "supernova", "ggformula")
+      lapply(packages, library, character.only = T)
+
+    </code>
+    <!--Student view-->
+    <code data-type="sample-code">
+      # Check to see whether 8 is equal to 8 
+        
+        
+      # Check to see whether 8 + 8 is equal to 16
+
+    </code>
+    <!--Solution environment-->
+    <code data-type="solution">
+        
+      # Check to see whether 8 is equal to 8 
+        8  == 8 
+        
+      # Check to see wehter 8 + 8 is equal to 16
+        8 + 8 == 16
+
+    </code>
+    <!--Submission correctness tests and feedback-->
+    <code data-type="sct">
+        ex() %>% check_operator("==", index = 1) %>% check_result() %>% check_equal() 
+        ex() %>% check_correct(
+            check_operator(., "==", index = 2) %>% check_result() %>% check_equal(),
+        {
+            check_error(.)
+            check_operator(., "+") %>% check_result() %>% check_equal()
+        }
+        )
+        
+        
+    </code>
+  </div>
+</body>
+</html>

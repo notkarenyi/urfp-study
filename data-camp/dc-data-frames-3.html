@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang='en'>
+<head>
+    <meta charset="UTF-8">
+    <title>Data Frames 3</title>
+    <!--DataCamp Light script-->
+    <script async src="https://cdn.jsdelivr.net/gh/uclatall/datacamp-light@build/dist/dcl-react.js"></script>
+</head>
+<body>
+  <!--DataCamp window-->
+  <div data-datacamp-exercise data-lang="r" data-show-run-button=false data-show-solution-before=false data-no-lazy-load=true>
+    <!--Prerun R environment-->
+    <code data-type="pre-exercise-code">
+      packages <- c("mosaic", "Lock5withR", "Lock5Data", "supernova", "ggformula")
+      lapply(packages, library, character.only = T)
+      tracker <- read.csv("https://docs.google.com/spreadsheets/d/e/2PACX-1vRlxWBQO0juGS4qYwHWdNp07qYwCD7gGs8snnERrweP46WpZXLiQTqgvZTT2GZzm5u52peaUH3e5obT/pub?output=csv")
+    </code>
+    <!--Student view-->
+    <code data-type="sample-code">
+      # Use the arrange() function to order the data by distance
+        
+
+    </code>
+    <!--Solution environment-->
+    <code data-type="solution">
+      arrange(tracker, distance)
+
+    </code>
+    <!--Submission correctness tests and feedback-->
+    <code data-type="sct">
+
+      ex() %>% check_correct(
+        check_function(., "arrange") %>% check_result() %>% check_equal(), 
+        {
+            check_function(., "arrange") %>% check_arg(".data") %>% check_equal() 
+            check_function(., "arrange") %>% check_arg("...") %>% check_equal() 
+        }
+        
+        )
+
+    </code>
+  </div>
+</body>
+</html>

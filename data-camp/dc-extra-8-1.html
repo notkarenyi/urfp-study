@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+    
+<head>
+    <meta charset="UTF-8">
+    <title>Extra 8-1</title>
+    <!--DataCamp Light script-->
+    <script async src="https://cdn.jsdelivr.net/gh/uclatall/datacamp-light@build/dist/dcl-react.js"></script>
+</head>
+
+<body>
+    <!--DataCamp window-->
+    <div data-datacamp-exercise data-lang="r" data-show-run-button=true data-show-solution-before=false data-no-lazy-load=true>
+        
+        <!--Prerun R environment-->
+        <code data-type="pre-exercise-code">
+            packages <- c("mosaic", "Lock5withR", "Lock5Data", "supernova", "ggformula")
+            lapply(packages, library, character.only = T)
+            tracker <- read.csv("https://docs.google.com/spreadsheets/d/e/2PACX-1vRlxWBQO0juGS4qYwHWdNp07qYwCD7gGs8snnERrweP46WpZXLiQTqgvZTT2GZzm5u52peaUH3e5obT/pub?output=csv")
+        </code>
+
+        <!--Student view-->
+        <code data-type="sample-code">
+            # Layer a boxplot over a scatterplot for the sleep variable, using the pipe symbol %>%
+        </code>
+
+        <!--Solution environment-->
+        <code data-type="solution">
+            gf_point(sleep ~ 1, data = tracker) %>% gf_boxplot(sleep ~ 1, data = tracker)
+        </code>
+
+        <!--Submission correctness tests and feedback, "gf_density"-->
+        <code data-type="sct">
+            <!--Note: currently piping shortcuts (no args) not checked-->
+            ex() %>% check_or(
+                check_function(., "gf_point") %>% 
+                check_function(., "gf_boxplot") %>% 
+                check_result() %>% check_equal(),
+
+                override_solution(., "gf_boxplot(sleep ~ 1, data = tracker) %>% gf_point(sleep ~ 1, data = tracker)") %>%
+                    check_function(., "gf_boxplot") %>% 
+                    check_function(., "gf_point") %>% 
+                    check_result() %>% 
+                    check_equal()
+            )
+        </code>
+    </div>
+</body>
+</html>

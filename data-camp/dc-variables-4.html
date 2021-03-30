@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang='en'>
+<head>
+    <meta charset="UTF-8">
+    <title>Variables 4</title>
+    <!--DataCamp Light script-->
+    <script async src="https://cdn.jsdelivr.net/gh/uclatall/datacamp-light@build/dist/dcl-react.js"></script>
+</head>
+<body>
+  <!--DataCamp window-->
+  <div data-datacamp-exercise data-lang="r" data-show-run-button=true data-show-solution-before=false data-no-lazy-load=true>
+    <!--Prerun R environment-->
+    <code data-type="pre-exercise-code">
+      packages <- c("mosaic", "Lock5withR", "Lock5Data", "supernova", "ggformula")
+      lapply(packages, library, character.only = T)
+
+    </code>
+    <!--Student view-->
+    <code data-type="sample-code">
+    # This stores the number 5 in the variable fav_num 
+      fav_num = 5
+      fav_num 
+        
+    # Try creating fav_num with the number 7 
+        
+    
+    # Print out fav_num in the space below 
+
+
+    </code>
+    <!--Solution environment-->
+    <code data-type="solution">
+        fav_num = 7 
+        fav_num
+
+    </code>
+    <!--Submission correctness tests and feedback-->
+    <code data-type="sct">
+        ex() %>% check_object("fav_num") %>% check_equal() 
+        ex() %>% check_output_expr("fav_num")
+
+    </code>
+  </div>
+</body>
+</html>
