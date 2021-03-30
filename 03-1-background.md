@@ -2,9 +2,9 @@
 
 Throughout these lessons, we will be working with a data set adapted from the Healthy Sleep Study, conducted by the Sleep Behavior Lab at a large research university. In this study, researchers Garrett Jorgensen, Molly Burke, Dan Schuster, and Kaitlyn Albertoni studied how exercise may help improve sleep quality.
 
-| Patrick Edwards           | Debra Bailey                | Paul Carter                | Carlotta Caputo             |
-| ------------------------- | --------------------------- | -------------------------- | --------------------------- |
-| ![](img/white-male-2.jpg) | ![](img/white-female-1.jpg) | ![](img/white-male-10.jpg) | ![](img/white-female-3.jpg) |
+| Patrick Edwards           | Debra Bailey                | Paul Carter               | Carlotta Caputo             |
+| ------------------------- | --------------------------- | ------------------------- | --------------------------- |
+| ![](img/white-male-2.jpg) | ![](img/white-female-1.jpg) | ![](img/white-male-6.jpg) | ![](img/white-female-3.jpg) |
 
 During this study, the research team recruited 1,200 healthy adult participants and measured their step count, distance walked, hours of sleep, and average heart rate for each day over a two-week period (Schuster et. al. 2007). The final data shows the daily step count, distance walked, and so forth for each participant, averaged over the two weeks. 
 
