@@ -29,10 +29,4 @@ Try creating `fav_num` with the number `7`.
 
 Coders call this variable reassignment. Variables are containers: we can put stuff in them. When we reassigned the variable, we just took out the number that was already in the container and replaced it with something else. That's why it's called a variable: we are able to vary (change) it.
 
-|                           | A note from Dr. Schuster:                                    |
-| ------------------------- | ------------------------------------------------------------ |
-| ![](img/white-male-1.jpg) | Now that we've learned about variables, we can start doing some really interesting stuff. |
-
-
-
 Click **Next** to go to Lesson 3.

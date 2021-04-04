@@ -25,10 +25,6 @@ Try checking whether `8` is equal to `8`, and then check whether `8 + 8` is equa
 
 <iframe data-type="datacamp" id="operators-4" height="350" src="https://uclatall.github.io/mtucker-coding-study/data-camp/dc-operators-4.html" style="border: 0px #ffffff none;" width="100%"></iframe>
 
-|                           | A note from Dr. Schuster:                                    |
-| ------------------------- | ------------------------------------------------------------ |
-| ![](img/white-male-1.jpg) | I know this page seemed kind of simple, but these concepts will become important later! |
-
-
+Great work! You're on your way to being a coder! Let's move on to the next lesson.
 
 Click **Next** to go to Lesson 2.
