@@ -1,0 +1,3 @@
+"0","times <- names(select(dat2, matches(""^time""))) "
+"0",""
+"0","dat2$persist <- rowSums(!is.na(dat2[times]))"

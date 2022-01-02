@@ -1,0 +1,5 @@
+"0","dat %>%"
+"0","  ggplot(aes(persist)) +"
+"0","  geom_bar(fill = c) +"
+"0","  ylab(""Number of participants"") +"
+"0","  plot_trials"

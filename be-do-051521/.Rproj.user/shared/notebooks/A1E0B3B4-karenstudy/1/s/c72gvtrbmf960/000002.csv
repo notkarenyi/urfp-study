@@ -1,0 +1,4 @@
+"0","dat %>%"
+"0","  filter(cs_xp == 0) %>%"
+"0","  ggplot(aes(persist)) +"
+"0","  geom_bar(aes(fill = condition))"

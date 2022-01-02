@@ -1,0 +1,5 @@
+"0","dat <- dat %>%"
+"0","  filter(status != ""Survey Preview"", finished == TRUE)"
+"0",""
+"0","dat <- dat %>%"
+"0","  select(-status, -finished, -progress)"

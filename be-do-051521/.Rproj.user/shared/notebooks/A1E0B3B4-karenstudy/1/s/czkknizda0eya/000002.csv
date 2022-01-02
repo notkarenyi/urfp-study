@@ -1,0 +1,5 @@
+"0","cor(as.numeric(dat$post_like_act), as.numeric(dat$likely_cs_course), use = ""complete.obs"")"
+"1","[1]"
+"1"," 0.433923"
+"1","
+"

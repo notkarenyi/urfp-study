@@ -1,0 +1,4 @@
+"0",""
+"0","dat %>%"
+"0","  ggplot(aes(condition, persist)) +"
+"0","  jitter"

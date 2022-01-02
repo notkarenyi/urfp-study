@@ -1,0 +1,3 @@
+"0","dat <- read.csv(""060421.csv"")"
+"0",""
+"0","pre <- read.csv(""060421_pre.csv"")"

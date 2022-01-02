@@ -1,0 +1,6 @@
+"0","times <- names(select(dat, matches(""^time_\\d""))) "
+"0",""
+"0","dat$persist <- rowSums(!is.na(dat[times]))"
+"0",""
+"0","# Binary coding of whether students chose to stop after the first trial (most significant dropoff point)"
+"0","dat$dropoff <- dat$persist < 2"

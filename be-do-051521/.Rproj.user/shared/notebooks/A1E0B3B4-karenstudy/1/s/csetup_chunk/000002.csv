@@ -1,0 +1,89 @@
+"0","knitr::opts_chunk$set(echo = TRUE)"
+"0","library(tidyverse)"
+"2","package ‘tidyverse’ was built under R version 4.0.5"
+"2","Registered S3 methods overwritten by 'dbplyr':
+  method         from
+  print.tbl_lazy     
+  print.tbl_sql      
+"
+"2","[30m-- [1mAttaching packages[22m -------------------------------------------------------------------------------- tidyverse 1.3.1 --[39m
+"
+"2","[30m[32mv[30m [34mggplot2[30m 3.3.4     [32mv[30m [34mpurrr  [30m 0.3.4
+[32mv[30m [34mtibble [30m 3.1.2     [32mv[30m [34mdplyr  [30m 1.0.6
+[32mv[30m [34mtidyr  [30m 1.1.3     [32mv[30m [34mstringr[30m 1.4.0
+[32mv[30m [34mreadr  [30m 1.4.0     [32mv[30m [34mforcats[30m 0.5.1[39m
+"
+"2","package ‘tibble’ was built under R version 4.0.5"
+"2","package ‘tidyr’ was built under R version 4.0.5"
+"2","package ‘readr’ was built under R version 4.0.5"
+"2","package ‘dplyr’ was built under R version 4.0.5"
+"2","package ‘stringr’ was built under R version 4.0.5"
+"2","package ‘forcats’ was built under R version 4.0.5"
+"2","[30m-- [1mConflicts[22m ----------------------------------------------------------------------------------- tidyverse_conflicts() --
+[31mx[30m [34mdplyr[30m::[32mfilter()[30m masks [34mstats[30m::filter()
+[31mx[30m [34mdplyr[30m::[32mlag()[30m    masks [34mstats[30m::lag()[39m
+"
+"0","library(multicon)"
+"2","package ‘multicon’ was built under R version 4.0.5"
+"2","Loading required package: psych
+"
+"2","package ‘psych’ was built under R version 4.0.5"
+"2","
+Attaching package: ‘psych’
+
+"
+"2","The following objects are masked from ‘package:ggplot2’:
+
+    %+%, alpha
+
+"
+"2","Loading required package: abind
+"
+"2","package ‘abind’ was built under R version 4.0.3"
+"2","Loading required package: foreach
+"
+"2","package ‘foreach’ was built under R version 4.0.5"
+"2","
+Attaching package: ‘foreach’
+
+"
+"2","The following objects are masked from ‘package:purrr’:
+
+    accumulate, when
+
+"
+"0","library(tm)"
+"2","package ‘tm’ was built under R version 4.0.5"
+"2","Loading required package: NLP
+"
+"2","package ‘NLP’ was built under R version 4.0.3"
+"2","
+Attaching package: ‘NLP’
+
+"
+"2","The following object is masked from ‘package:ggplot2’:
+
+    annotate
+
+"
+"0","library(lubridate)"
+"2","package ‘lubridate’ was built under R version 4.0.5"
+"2","
+Attaching package: ‘lubridate’
+
+"
+"2","The following objects are masked from ‘package:base’:
+
+    date, intersect, setdiff, union
+
+"
+"0","library(survival)"
+"0","library(survminer)"
+"2","package ‘survminer’ was built under R version 4.0.5"
+"2","Loading required package: ggpubr
+"
+"2","package ‘ggpubr’ was built under R version 4.0.3"
+"2","Registered S3 method overwritten by 'data.table':
+  method           from
+  print.data.table     
+"

@@ -1,0 +1,6 @@
+"0","cor(dat2$pre_interest_cs, as.numeric(dat2$likely_cs_course), use = ""complete.obs"")
+"
+"1","[1]"
+"1"," 0.8347022"
+"1","
+"

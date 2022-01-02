@@ -1,0 +1,5 @@
+"0","pre_cs <- select(dat, matches(""pre.*cs""), -matches(""conf""))"
+"0",""
+"0","dat2 <- dat %>%"
+"0","  select(-matches(""pre.*cs""), matches(""conf""))"
+"0","dat2 <- mutate(dat2, pre_interest_cs = rowMeans(data.matrix(pre_cs), na.rm = TRUE))"

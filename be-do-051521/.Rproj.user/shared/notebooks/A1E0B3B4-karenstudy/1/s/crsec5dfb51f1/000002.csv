@@ -1,0 +1,4 @@
+"0","dat <- dat %>%"
+"0","  mutate(model_gender = factor(model_gender, levels = unique(model_gender), labels = c(""male"", ""female"")),"
+"0","         model_race = factor(model_race, levels = unique(model_race), labels = c(""latino"", ""asian"", ""white"", ""black"")),"
+"0","         img = paste(model_race, model_gender, sep = "" ""))"

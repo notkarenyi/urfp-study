@@ -1,0 +1,4 @@
+"0",""
+"0","dat %>%"
+"0","  ggplot(aes(time, persist)) +"
+"0","  geom_jitter(width = 0.1, height = 0.1)"

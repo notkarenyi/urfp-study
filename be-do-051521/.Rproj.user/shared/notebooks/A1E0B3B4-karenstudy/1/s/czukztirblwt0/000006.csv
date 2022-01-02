@@ -1,0 +1,6 @@
+"0",""
+"0","dat %>%"
+"0","  filter(img != """") %>%"
+"0","  ggplot(aes(dropoff)) +"
+"0","  geom_bar(width = 0.5) +"
+"0","  facet_wrap(~condition)"

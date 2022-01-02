@@ -1,0 +1,5 @@
+"0",""
+"0","dat %>%"
+"0","  ggplot(aes(pre_interest_cs, dropoff)) +"
+"0","  jitter +"
+"0","  xlab(""Presurvey interest in CS (1 = No interest, 6 = High interest)"")"

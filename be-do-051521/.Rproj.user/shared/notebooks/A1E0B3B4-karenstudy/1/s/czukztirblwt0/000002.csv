@@ -1,0 +1,4 @@
+"0","dat %>%"
+"0","  filter(img != """") %>%"
+"0","  ggplot(aes(condition)) +"
+"0","  geom_bar(aes(fill = dropoff), position = ""fill"")"

@@ -1,0 +1,32 @@
+{
+    "id": "6657D344",
+    "path": null,
+    "project_path": null,
+    "type": "r_dataframe",
+    "hash": "0",
+    "contents": "",
+    "dirty": false,
+    "created": 1622493078736.0,
+    "source_on_save": false,
+    "relative_order": 6,
+    "properties": {
+        "expression": "cor(data.matrix(select(dat2, fit_cs_class, likely_cs_course,      pre_interest_cs, pre_interest_act, post_interest_cs, post_interest_act)),      use = \"complete\")",
+        "caption": "cor(data.matrix(select(dat2, fit_cs_class, likely_cs_course, ",
+        "totalObservations": 6,
+        "displayedObservations": 6,
+        "variables": 6,
+        "cacheKey": "5F7ECC26",
+        "object": "",
+        "environment": "_rs_no_env",
+        "contentUrl": "grid_resource/gridviewer.html?env=_rs_no_env&obj=&cache_key=5F7ECC26&max_cols=50",
+        "preview": 0
+    },
+    "folds": "",
+    "lastKnownWriteTime": 2112612503832,
+    "encoding": "",
+    "collab_server": "",
+    "source_window": "",
+    "last_content_update": 1622493078736,
+    "read_only": false,
+    "read_only_alternatives": []
+}

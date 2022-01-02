@@ -1,0 +1,8 @@
+"0","ggsurvplot(fit, "
+"0","           data = dat,"
+"0","           conf.int = TRUE,"
+"0","           conf.int.style = ""ribbon"","
+"0","           conf.int.alpha = 0.1,"
+"0","           risk.table = ""percentage"","
+"0","           risk.table.height = 0.3,"
+"0","           ggtheme = theme_light())"

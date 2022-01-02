@@ -1,0 +1,4 @@
+"0","dat$model_score <- dat %>%"
+"0","  select(model_respect, model_friendly, model_like) %>%"
+"0","  data.matrix %>%"
+"0","  rowMeans()"

@@ -1,0 +1,5 @@
+"0",""
+"0","pre %>%"
+"0","  filter(gender == ""Female"" | gender == ""Male"") %>%"
+"0","  ggplot(aes(gender)) +"
+"0","  geom_bar()"

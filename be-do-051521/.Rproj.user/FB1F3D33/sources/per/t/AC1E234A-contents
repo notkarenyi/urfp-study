@@ -1,0 +1,685 @@
+---
+title: "karenstudy"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(multicon)
+library(tm)
+library(lubridate)
+library(survival)
+library(survminer)
+```
+
+*Try making your own ggplot themes* Customize function
+
+```{r plots}
+# Plot objects
+
+c <- "orange"
+s <- 3
+w <- 0.1
+h <- 0.1
+
+plot_trials <- list(xlab("Number of trials voluntarily completed"),
+                    scale_x_continuous(breaks = 1:7))
+
+plot_post_interest <- list(xlab("Post-test interest in activity (1 = Strongly dislike, 6 = Strongly like)"),
+                           scale_x_discrete(breaks = 0:6, labels = 0:6, limits = 0:6))
+
+orange_jitter <- geom_jitter(color = c, size = s, width = w, height = h)
+
+jitter <- geom_jitter(width = w, height = h)
+
+alpha_point <- geom_point(color = c, size = s, alpha = 0.5)
+
+fct_neither_order <- c("Strongly disagree", 
+                       "Somewhat disagree", 
+                       "Neither agree nor disagree", 
+                       "Somewhat agree", 
+                       "Strongly agree")
+```
+
+## Study change log
+
+* Friday 5/28/21: discovered that I had neglected to grant automatic credit for part 1.
+* Saturday 5/29/21: sent email asking participants to contact me if they had not successfully been granted credit for part 1.
+* Sunday 5/30/21: discovered bug where participants would be given the word task even if they had finished the study.
+* Sunday 5/30/21: discovered bug where participants would not be allowed to switch out of task if they had chosen "switch" on choice 3.
+* Monday 5/31/21: discovered one entry with a bug where the gender was coded as 6 for literally no reason. Tried to fix by making the adjustment block change the gender to 1 if it detected a gender greater than 2 (as opposed to only adjusting for a gender of 3).
+* Monday 5/31/21: considered that I could just randomly assign participants to any of the conditions without first randomizing based on participant demographics, but rejected based on premise that the current sample is very unrepresentative overall.
+* Tuesday 6/1/21: realized that some participants have been inputting their student ID for the participation ID question. Added question validation to limit response length to 4 digits. 
+* Tuesday 6/1/21: anonymized presurvey and re-formatted questions for data collection.
+
+* Additional notes: Wednesday 10:04 AM there is a response that may be invalidated because there was little to no delay between part 1 and part 2. Should have found their record instead of asking them to take it again.
+
+* Lots of missing data. We should make questions required.
+* Better keep a consistent scale for Likert questions.
+
+## Import and clean
+
+NOTE: this data is NOT the raw data from Qualtrics
+* I separated the first and second repetitions of the same questions into separate pages
+* I also renamed the emotions questions
+
+I could do the below in many fewer lines of code if I knew how the duplication fixer on `read_xlsx` worked. My current method requires a manual separation of the duplicated columns from the rest of the data, which is a pain.
+
+```{r}
+dat <- read.csv("060421.csv")
+
+pre <- read.csv("060421_pre.csv")
+```
+
+Now I will rename the data using the key page on my Excel sheet, which I also made manually. The list is semi-automatically generated using regex find-and-replace.
+
+```{r}
+names(dat) <- c("delete", "time", "delete", "progress", "seconds", "delete", "delete", "delete", "delete", "delete", "id", "pre_interest_act", "pre_like_act", "pre_useful_act", "pre_relevant_act", "pre_feeling", "pre_feeling_long", "pre_enjoy_cs", "pre_learn_cs", "pre_course_cs", "pre_interest_cs", "pre_excite_cs", "pre_conf_cs", "pre_conf_act", "delete", "delete", "time_1", "delete", "choice_1", "delete", "delete", "time_2", "delete", "choice_2", "delete", "delete", "time_3", "delete", "choice_3", "delete", "delete", "time_4", "delete", "choice_4", "delete", "delete", "time_5", "delete", "choice_5", "delete", "delete", "delete", "time_6", "delete", "choice_6", "delete", "delete", "delete", "time_7", "delete", "delete", "delete", "delete", "delete", "delete", "delete", "delete", "delete", "delete", "delete", "delete", "delete", "delete", "delete", "delete", "delete", "delete", "delete", "delete", "delete", "stereotype", "p_female", "p_black", "p_aapi", "p_latino", "p_white", "p_other", "switched", "why_switch", "why_stay", "post_interest_act", "post_like_act", "post_useful_act", "post_relevant_act", "cs_xp", "why_cs_course", "why_no_cs_course", "likely_cs_course", "likely_cs_job", "likely_learn_cs", "future_long", "r_att", "r_att_long", "post_interest_cs", "post_excite_cs", "post_conf_cs", "post_conf_act", "post_belonging", "post_difficult", "post_opp_cost", "post_stress", "post_time_cost", "post_growth", "post_fixed1", "post_fixed2", "post_fixed3", "fit_cs_class", "fit_cs_job", "fit_cs_skill", "fit_cs_teach", "fit_cs_major", "relative_effort", "relative_difficult", "relative_school", "year", "hs_usa", "hs_int", "age", "gpa", "major", "transfer", "employ", "help", "model_similar", "model_respect", "model_friendly", "model_like", "model_long", "fem_exposure", "race_exposure", "delete", "parents_fem", "friends_fem", "delete", "delete", "parents_race", "friends_race", "friends_cs", "mom_cs", "dad_cs", "delete", "delete", "delete", "delete", "model_gender", "model_race", "p_gender", "p_race", "delete", "condition", "delete", "delete", "img", "delete")
+
+dat <- dat %>%
+  select(-delete, -matches("choice")) %>%
+  tail(nrow(dat) - 2)
+
+View(dat)
+```
+
+Fixing data types
+
+```{r}
+# Convert time intervals and gpas to double
+for (i in seq_along(dat)) {
+  if (str_detect(names(dat[i]), "time_\\d")) {
+    dat[,i] <- as.numeric(dat[,i])
+  }
+}
+
+dat <- dat %>%
+  mutate(seconds = as.numeric(seconds),
+         time = parse_datetime(time),
+         gpa = as.numeric(gpa))
+
+# Likert function
+likert <- function(col){
+  # Protect long-response answers that may inadvertently match the Likert cue terms
+  if (sum(str_detect(col, "^Neither"), na.rm = TRUE) > 0) {
+      lbls <- c(1:5)
+      lvls <- c("Strongly disagree", "Somewhat disagree", "Neither agree nor disagree", "Somewhat agree", "Strongly agree")
+      factor(col, lvls, lbls)
+}
+  else if (length(unique(col)) < 7) {
+      lbls <- c(1:6)
+      if (sum(str_detect(col, "agree$"), na.rm = TRUE) > 0){
+        lvls <- c("Strongly disagree", "Disagree", "Somewhat disagree", "Somewhat agree", "Agree", "Strongly agree")
+      } else if (sum(str_detect(col, "[Nn]egative$|[Pp]ositive"), na.rm = TRUE) > 0){
+        lvls <- c("Strongly negative", "Negative", "Somewhat negative", "Somewhat positive", "Positive", "Strongly positive")
+      } else if (sum(str_detect(col, "likely$"), na.rm = TRUE) > 0){
+        lvls <- c("Very unlikely", "Unlikely", "Somewhat unlikely", "Somewhat likely", "Likely", "Strongly likely")
+      } else {
+        return(col)
+      }
+      factor(col, lvls, lbls)
+  } else {
+    col
+  }
+}
+
+# try case_when, refactor
+
+# Convert Likert items to factors
+
+for (i in seq_along(dat)) {
+  dat[[i]] <- likert(dat[[i]])
+}
+
+nm <- dat %>%
+  select(matches("fit"), 
+         -matches("long"), 
+         matches("relative"),
+         switched,
+         cs_xp) %>%
+  names()
+
+dat <- mutate_at(dat, nm, ~ case_when(. == "1 = Not at all similar" ~ 1,
+                                      . == "1 = A lot less" ~ 1, 
+                                      . == "2" ~ 2, 
+                                      . == "3" ~ 3, 
+                                      . == "4" ~ 4, 
+                                      . == "5" ~ 5, 
+                                      . == "6 = Very similar or the same" ~ 6,
+                                      . == "6 = A lot more" ~ 6,
+                                      . == "Yes" ~ 1,
+                                      . == "No" ~ 0))
+```
+
+Remove invalid responses
+
+```{r}
+dat <- dat %>%
+  filter(model_gender != 6,
+         model_race != "")
+```
+
+Cleaning demographics
+
+```{r}
+dat <- dat %>%
+  mutate(model_gender = factor(model_gender, levels = unique(model_gender), labels = c("male", "female")),
+         model_race = factor(model_race, levels = unique(model_race), labels = c("latino", "asian", "white", "black")),
+         img = paste(model_race, model_gender, sep = " "))
+```
+
+
+### Cleaning the presurvey
+
+```{r}
+# Remove dummy rows
+pre <- pre %>%
+  tail(nrow(pre) - 2)
+
+pre <- pre %>% 
+  select(race, gender, major, Gender, Race) %>%
+  filter(Race != "", 
+         Gender != "",
+         Race != "5",
+         Gender != "3") %>%
+  mutate(Race = as.numeric(Race),
+         Gender = as.numeric(Gender),
+         race = factor(Race, levels = unique(Race), labels = unique(race)),
+         gender = factor(Gender, levels = unique(Gender), labels = unique(gender)))
+```
+
+
+## Measure construction
+
+I am going to create composite measures for some of our variables of interest. I am okay with this since the measures are within-subject, so a composite would be accurate to each person.
+
+I will create a measure of persistence by summing the `time_*` variables that are not missing. (Not summing the values, only the existence thereof of data.)
+
+```{r}
+times <- names(select(dat, matches("^time_\\d"))) 
+
+dat$persist <- rowSums(!is.na(dat[times]))
+
+# Binary coding of whether students chose to stop after the first trial (most significant dropoff point)
+dat$dropoff <- dat$persist < 2
+```
+
+## Sample analysis
+
+[Fixing double-barreled answers](https://stackoverflow.com/questions/37224010/string-split-and-duplicate-row-in-r) from Stack Overflow.
+
+```{r}
+clean_major <- function(col) {
+  col %>%
+  tolower() %>%
+  str_replace("pre|[\\w ]*ing in ", "") %>%
+  str_replace("-", "") %>%
+  str_replace("&", "and") %>%
+  str_replace("human biology and society", "human biology & society") %>%
+  str_replace("world arts and cultures", "world arts & cultures") %>%
+  str_replace("[\\w, ]*developmental[\\w, ]*|mcdb", "molecular cellular & developmental biology") %>%
+  str_replace("microbiology[\\w, ]*|mimg", "microbiology immunology & molecular genetics") %>%
+  str_replace("comm[\\w]*", "communications") %>%
+  str_replace("poli[\\w,\\- ]*", "political science") %>%
+  str_replace("socio[\\w]*", "sociology") %>%
+  str_replace("neuro\\w*", "neuroscience") %>%
+  str_replace("cog[\\w ]*", "cognitive science") %>%
+  str_replace("anthro[\\w\\. ]*", "anthropology") %>%
+  str_replace("spanish and linguistics[\\w ]*", "spanish and linguistics") %>%
+  str_replace("computer eng\\w*", "computer engineering") %>%
+  str_replace("phys[\\w ]*", "physiological science") %>%
+  str_replace("psychobio\\w*", "psychobiology") %>%
+  str_replace("psycholog\\w*|psych\\b", "psychology") %>%
+  str_replace("un\\w* social \\w*", "undeclared social sciences") %>%
+  str_replace("general biology", "biology") %>%
+  str_replace("thinking about majoring in economics also", "") %>%
+  str_trim() 
+}
+
+pre$major <- clean_major(pre$major)
+dat$major <- clean_major(dat$major)
+                       
+str_split(pre$major, " and |, | or ") %>%
+  unlist() %>%
+  data.frame() %>%
+  ggplot(aes(.)) +
+  geom_bar() +
+  coord_flip()
+
+dat_major <- str_split(dat$major, " and |, | or ") %>%
+  unlist() %>%
+  data.frame()
+names(dat_major) <- "major"
+
+dat_major %>%
+  group_by(major) %>%
+  summarize(n = n()) %>%
+  filter(n > 1) %>%
+  ggplot(aes(reorder(major, n),n)) +
+  geom_bar(stat = "identity") +
+  coord_flip()
+
+pre %>%
+  ggplot(aes(race)) +
+  geom_bar() +
+  coord_flip()
+
+pre %>%
+  filter(gender == "Female" | gender == "Male") %>%
+  ggplot(aes(gender)) +
+  geom_bar()
+```
+
+## Manipulation checks
+
+How much did the manipulation checks correlate with each other?
+
+```{r}
+dat %>%
+  select(matches("model"), -model_gender, -model_race, -model_long) %>%
+  data.matrix() %>%
+  cor()
+```
+
+It seems that the `respect`, `friendly`, and `like` measures all correlate very well. Let's create a composite.
+
+```{r}
+dat$model_score <- dat %>%
+  select(model_respect, model_friendly, model_like) %>%
+  data.matrix %>%
+  rowMeans()
+```
+
+
+```{r}
+dat %>%
+  ggplot(aes(model_score)) +
+  geom_bar() +
+  facet_wrap(~img) +
+  coord_flip()
+```
+
+Maybe people liked a certain gender or race better overall ?
+
+```{r}
+dat %>%
+  ggplot(aes(model_score)) +
+  geom_bar() +
+  facet_wrap(~model_gender) +
+  coord_flip()
+
+lm(dat$model_score ~ dat$model_gender)
+lm(dat$model_respect ~ dat$model_gender)
+
+ggplot(aes(persist), data = dat) +
+  geom_histogram() +
+  facet_wrap(~model_gender)
+```
+
+## Main analysis
+
+### Descriptive analyses
+
+Did the study materials yield the expected variation in persistence?
+
+```{r}
+dat %>%
+  ggplot(aes(persist)) +
+  geom_bar(fill = c) +
+  ylab("Number of participants") +
+  plot_trials
+```
+
+The fact that the distribution is slightly bimodal hints at the possibility that the variation is simply due to general conscientiousness (alternatively, it could just be a ceiling effect). We can plot persistence against GPA to gain more understanding of whether this is the case.
+
+```{r}
+dat %>%
+  ggplot(aes(persist, gpa)) +
+  alpha_point +
+  plot_trials +
+  ylab("Grade Point Average") +
+  scale_y_continuous(breaks = seq(0, 4, by = 0.25), limits = c(2.5, 4.0))
+
+cor(dat$gpa, dat$persist, use = "complete.obs")
+```
+
+Next, I want to explore whether variation really does reflect interest in the activity. In order to do so, I want to start out by asking whether the `fit_*` variables correlate sufficiently to create a composite score of CS belongingness. (As a side note, I wonder if the activity affected participants' answers on these measures.)
+
+These show effects of framing and how people think.
+
+```{r}
+dat %>%
+  ggplot(aes(fit_cs_class, fit_cs_job)) +
+  jitter
+
+cor(data.matrix(select(dat, matches("fit"), -matches("long"))))
+```
+
+Interestingly, these questions seemed to have captured different constructs, with similarity to CS professors the most dissimilar to similarity to students taking those same CS courses. I would hope that this is not a reflection of age factors, but rather a reflection of personality traits.
+
+I also want to check the correlation between some variables that I would assume are related: predicted likelihood of taking CS courses, interest in CS, interest in the activity, belongingness in CS courses, etc.
+
+*Do people who show reduced interest in the activity also show reduced interest in computer science? (pre and post analysis)*
+
+What is interesting about people who show increased interest in computer science? Does inclusion make people more interested in CS? This activity without manipulation leads people to be less interested in computer science. This is similar to the way we teach computer science normally. Go to online programming websites and screenshot.
+
+*People are interested in CS, but don't feel like they fit. Does this affect their likelihood of actually taking the course?* Extracurriculars and CS community?
+
+```{r}
+cor(data.matrix(select(dat, 
+                       fit_cs_class, 
+                       likely_cs_course, 
+                       pre_interest_cs,
+                       pre_interest_act,
+                       post_interest_cs, 
+                       post_interest_act)), 
+    use = "complete")
+```
+
+Wow. It appears that the study participants did not seem to associate the activity with real CS courses. Even though they were learning some of the same concepts, their enjoyment of the activity did not correlate at all with their likelihood of taking CS courses. I can think of two other possible explanations for this trend: maybe students' likelihood of taking CS is dictated by their degree programs more than their interest, or maybe this was a poorly constructed task that all students hated.
+
+```{r}
+dat %>%
+  ggplot(aes(fit_cs_class, pre_interest_cs)) +
+  jitter
+
+dat %>%
+  ggplot(aes(pre_interest_cs, post_interest_cs)) +
+  jitter
+
+dat %>%
+  ggplot(aes(post_interest_act, pre_interest_act)) +
+  jitter
+
+dat %>%
+  ggplot(aes(fit_cs_class, pre_interest_act)) +
+  jitter
+
+dat %>%
+  ggplot(aes(pre_interest_act, likely_cs_course)) +
+  jitter
+```
+
+Additionally, students do not seem to care much about their fit in a CS course to determine how interested they are in CS, counter to the theories of Master, Eccles, and Leaper. This finding is especially significant because the sample consists of women. This difference may have arisen due to the sample (educated and adult). 
+
+The actual activity seemed to have soured people's expectations somewhat of what the activity would be like, with relatively low correlation between people's interest in the activity prior to beginning the study and people's interest after the study.
+
+```{r}
+dat %>%
+  ggplot(aes(as.numeric(as.character(post_interest_act)))) +
+  geom_bar(fill = c) +
+  plot_post_interest +
+  ylab("# participants")
+```
+
+Well, that disproves the second hypothesis (of floor effects), although acquiescence and demand characteristics are still possibilities.
+
+```{r}
+dat %>%
+  ggplot(aes(fit_cs_class, persist)) +
+  jitter
+
+dat %>%
+  ggplot(aes(likely_cs_course, persist)) +
+  jitter
+```
+
+I also realized that many students marked themselves as having taken a CS course in the past, which may invalidate half the data.
+
+```{r}
+dat %>%
+  filter(cs_xp == 0) %>%
+  ggplot(aes(persist)) +
+  geom_bar(aes(fill = condition))
+```
+
+
+```{r}
+dat %>%
+  ggplot(aes(cs_xp, persist)) +
+  jitter
+
+dat %>%
+  ggplot(aes(cs_xp, post_interest_act)) +
+  jitter
+
+wilcox.test(as.numeric(post_interest_act) ~ cs_xp, data = dat)
+```
+
+Although there appears to be a shift where students who have taken CS courses before are more interested in the activity, the small sample size makes the difference not significant. 
+
+### Prior interest in CS
+
+Let's check whether any correlations seem to exist between time spent on the entire experiment, and prior attitudes towards computer science.
+
+```{r}
+dat %>%
+  ggplot(aes(persist, pre_interest_cs)) +
+  orange_jitter +
+  plot_trials +
+  ylab("Presurvey interest in CS (1 = Not interested, 6 = Very interested)")
+
+dat %>%
+  ggplot(aes(pre_interest_cs, dropoff)) +
+  jitter +
+  xlab("Presurvey interest in CS (1 = No interest, 6 = High interest)")
+```
+
+Let's calculate significance tests and models for those explorations.
+
+```{r}
+# comparing different models
+# summary(anova(mod1, mod2))
+
+# anova table
+# summary(lm(y ~ x, data = data))
+
+# multilevel regressions are for dependency in groups within groups - hierarchical structure
+# multiple regressions are for more than one predictor 
+# in order to analyze fit as quantitative variable, change to integer instead of factor
+# create a vector of the variables you want to manipulate, and mutate_at(vars(Vars), ~case_when(.,"3" ~ 3,...)) 
+summary(aov(seconds ~ pre_interest_cs + fit_cs_major, data = dat))
+
+cor(as.numeric(dat$pre_interest_cs), dat$seconds, use = "complete.obs")
+```
+
+*Frequencies and descriptives: how long did people spend on average, how many times did people click to continue, etc.*
+
+*Answer pilot type questions. Compare across outcomes variables with difference in responses, gender, race. People who persist and don't persist.* 
+
+We revealed that only 2 students reported little to no prior interest in CS. This may be due to acquiescence/demand characteristics, or a characteristic of the subject pool (psychology students).
+
+Do future plans to take CS courses correlate with prior interest in CS?
+
+```{r}
+dat %>%
+  ggplot(aes(likely_cs_course, pre_interest_cs)) +
+  jitter
+
+cor(as.numeric(dat$pre_interest_cs), as.numeric(dat$likely_cs_course), use = "complete.obs")
+```
+
+There is a moderate correlation between interest in CS and intention to take a CS course, indicating the existence of other contributing factors.
+
+Prior interest in CS seems to predict likelihood of enrolling in a future CS course much more accurately than having enjoyed the activity does:
+
+```{r}
+cor(as.numeric(dat$post_like_act), as.numeric(dat$likely_cs_course), use = "complete.obs")
+```
+
+Does prior interest in CS correlate with demographics?
+
+```{r}
+vlines <- dat %>%
+  filter(p_race != "") %>%
+  group_by(p_race) %>%
+  summarize(avg = mean(as.numeric(pre_interest_cs)))
+
+dat %>%
+  filter(p_race != "") %>%
+  ggplot(aes(pre_interest_cs)) + 
+  geom_bar() +
+  facet_wrap(~p_race) +
+  geom_vline(data = vlines, aes(xintercept = avg))
+
+chisq.test(dat$p_race[dat$p_race != ""], dat$pre_interest_cs[dat$p_race != ""])
+```
+
+There was insufficient data to draw any particular conclusions.
+
+How did the conditions work out? i.e., the main point of the study?
+
+*Analysis for continuous measure of persistence*
+
+*Try Poisson (survival curve).* Open science framework/portal
+
+```{r}
+dat %>%
+  filter(img != "") %>%
+  ggplot(aes(condition)) +
+  geom_bar(aes(fill = dropoff), position = "fill")
+
+dat %>%
+  ggplot(aes(condition, persist)) +
+  jitter
+
+dat %>%
+  filter(img != "") %>%
+  ggplot(aes(dropoff)) +
+  geom_bar(width = 0.5) +
+  facet_wrap(~condition)
+
+table(dat$condition, dat$dropoff)
+chisq.test(table(dat$condition, dat$dropoff))
+
+ggplot(aes(dropoff), data = dat) +
+  geom_histogram(stat = "count")
+# 
+# but which ones are significant? post hoc ?
+
+lm(dat$persist ~ dat$model_gender) %>%
+  summary()
+```
+
+# assumptions for chi square ? What to do if violation? Ask Karen
+# independence of the levels of each variable
+
+```{r survival, fig.height = 6}
+
+dat <- dat %>%
+  mutate(censor = ifelse(persist < 7, 1, 0))
+surv <- Surv(time = dat$persist, event = dat$censor)
+fit <- survfit(surv ~ condition, data = dat)
+summary(fit)
+surv_summary(fit)
+
+ggsurvplot(fit, 
+           data = dat,
+           conf.int = TRUE,
+           conf.int.style = "ribbon",
+           conf.int.alpha = 0.1,
+           risk.table = "percentage",
+           risk.table.height = 0.3,
+           ggtheme = theme_light())
+
+ggsurvplot(survfit(surv ~ 1), data = dat)
+
+```
+
+```{r}
+coxph(surv ~ model_race * model_gender, data = dat) %>%
+  summary()
+
+coxph(surv ~ condition, data = dat) %>%
+  summary()
+```
+
+It looks like there's a relation between model gender and persistence, and model gender and respectability ?
+
+*Look at if people endorsing CS stereotypes were more likely to rate males as respectable/likable*
+
+```{r}
+dat
+```
+
+
+I suspect that students will be more likely to drop off if they are taking the study late at night...
+
+```{r}
+dat %>%
+  ggplot(aes(hour(time), persist)) +
+  geom_jitter()
+
+dat %>%
+  ggplot(aes(time, persist)) +
+  geom_jitter(width = 0.1, height = 0.1)
+```
+
+### Textual analysis
+
+Using a new package called `tm` (text mining). Followed a [guide on text mining](http://www.sthda.com/english/wiki/text-mining-and-word-cloud-fundamentals-in-r-5-simple-steps-you-should-know).
+
+I've noticed that what I really want are adjectives and nouns, not so much verbs or articles or prepositions.
+
+Try the tidytext package. Option to include negaters. 
+
+Look at gender differences.
+
+Sentiment analysis. Positive/negative. Length of response as measure of engagement. Topic analysis?
+
+[Guide to text mining with tidytext](https://www.tidytextmining.com/)
+
+Ideas: archival data, with computer science textbooks ? Lectures? Transcripts ?
+
+Some overlap between response coding and text mining. 
+
+Pennebaker created Liwc for sentiment analysis in clinical context. 
+
+```{r}
+resps <- dat %>%
+  select(id, stereotype) %>%
+  filter(!is.na(stereotype)) %>%
+  mutate(doc_id = id,
+         text = stereotype)
+
+text <- Corpus(DataframeSource(resps))
+text <- text %>% 
+  tm_map(removeWords, stopwords("english")) %>%
+  tm_map(content_transformer(tolower)) %>%
+  tm_map(removePunctuation) %>%
+  tm_map(stemDocument) %>%
+  tm_map(removeWords, c("they", "peopl", "comput", "code", "program*",
+                        "like", "interest", "good", "also", "probabl",
+                        "person", "this", "use", "may", "someon", "spend",
+                        "look", "might", "tend", "lot", "time", "enjoy",
+                        "work", "wear", "stereotyp", "play", "think", "averag",
+                        "frequent", "typic", "thing", "job", "imagin", "the",
+                        "scienc"))
+
+text_results <- as.matrix(TermDocumentMatrix(text))
+text_results <- sort(rowSums(text_results), decreasing = TRUE) 
+text_results <- data.frame(words = names(text_results), freq = text_results) %>%
+  arrange(desc(freq))
+
+row.names(text_results) = 1:nrow(text_results)
+
+text_results %>%
+  arrange(desc(freq)) %>%
+  head(15) %>%
+  ggplot(aes(freq, words)) +
+  geom_col()
+```
+
+While the above methods provide some interesting information, it is not very useful. A better approach would be to code responses by hand, noting where responses confirm stereotypes or serve to distance the speaker from computer scientists as a group. From the pilot data, I could create a codebook.
+
+```{r include=FALSE}
+dat$stereotype
+```
+
+*Apply for undergraduate research grants for Mechanical Turk* Wider age range and familiarity with technology
+UCLA is a special population
+Ask Ji about CalState LA
+Look into opening data collection in Sona over the summer
+
+Compare the stereotype data with Mary's study and mine
