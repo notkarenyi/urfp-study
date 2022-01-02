@@ -1,0 +1,634 @@
+---
+title: "Descriptives"
+output: html_document
+---
+
+Note!! This document contains custom functions and plot objects, declared at the top.
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(multicon)
+library(tm)
+library(lubridate)
+```
+
+## Table of contents
+
+* [Import data](#import-data)
+* [Sample analysis](#sample-analysis)
+* [Manipulation checks](#manipulation-checks)
+* [Task conscientiousness](#task-conscientiousness)
+* [CS attitudes](#cs-attitudes)
+* [Persistence as a measure of interest](#persistence-as-a-measure-of-interest)
+* [Possible alternative explanations](#possible-alternative-explanations)
+* [Common-sense correlations between constructs](#common-sense-correlations-between-constructs)
+
+## Import data
+
+(Hidden)
+
+```{r, include=FALSE}
+dat <- readRDS("C:/Users/notka/Documents/Folder/College/Research/TALL/urfp-local/dat.rds")
+pre <- readRDS("C:/Users/notka/Documents/Folder/College/Research/TALL/urfp-local/pre.rds")
+```
+
+Note: Try making your own ggplot themes
+
+Customize functions (hidden)
+
+```{r plots, include=FALSE}
+# Plot objects
+
+c <- "grey30"
+s <- 3
+w <- 0.1
+h <- 0.1
+
+plot_trials <- list(xlab("Number of trials voluntarily completed"),
+                    scale_x_continuous(breaks = 0:7))
+
+plot_post_interest <- list(xlab("Post-test interest in activity (1 = Strongly dislike, 6 = Strongly like)"),
+                           scale_x_discrete(breaks = 0:6, labels = 0:6, limits = 0:6))
+
+jitter <- geom_jitter(width = w, height = h)
+
+alpha_point <- geom_point(color = c, size = s, alpha = 0.5)
+
+fct_neither_order <- c("Strongly disagree", 
+                       "Somewhat disagree", 
+                       "Neither agree nor disagree", 
+                       "Somewhat agree", 
+                       "Strongly agree")
+```
+
+Custom functions (hidden)
+
+```{r, include=FALSE}
+#Create a correlation matrix using items of interest
+cormat <- function (df) {
+  df %>%
+    #Transform any factors to numeric
+    data.matrix() %>%
+    #Correlations, ignoring NA values
+    cor(use="complete") %>%
+    #Round to 3 significant figures
+    round(., 3) %>%
+    #Make readable by deleting upper triangle of matrix (redundant)
+    replace(upper.tri(.), NA)
+}
+
+#Create a proportion table for factors
+facttab <- function (v) {
+  v %>%
+    table() %>%
+    prop.table() %>%
+    round(3)
+}
+```
+
+[Source](https://stackoverflow.com/questions/20637360/convert-all-data-frame-character-columns-to-factors/20637986)
+
+```{r}
+dat[sapply(dat, is.factor)] <- lapply(dat[sapply(dat, is.factor)], 
+                                      as.numeric)
+```
+
+Statistics notes:
+* [source](http://www.sthda.com/english/wiki/correlation-test-between-two-variables-in-r) use Shapiro Wilk to check normality, then test for significant correlation
+* Leaper et al used Cronbach alpha to measure internal consistency ??
+
+## Sample analysis
+
+Plot majors (split responses so that students reporting multiple majors are counted multiple times). First plot shows results from presurvey; second shows those who actually took the main study.
+
+Note: how to deal with students reporting multiple majors in the main analyses?
+
+```{r}
+# Pre-survey
+str_split(pre$major_txt, " and |, | or ") %>%
+  unlist() %>%
+  data.frame() %>%
+  ggplot(aes(.)) +
+  geom_bar() +
+  coord_flip()
+
+# Main survey
+dat %>%
+  group_by(major_txt) %>%
+  mutate(n = n()) %>%
+  ungroup() %>%
+  ggplot(aes(reorder(major_txt, n))) +
+  geom_bar() +
+  coord_flip()
+```
+
+Examine race and gender distribution of survey participants. Note: I only started saving this information halfway through the study. I assume that the second half of students are similar to the first. For some values, such as gender, I checked the condition and deduced the participant's gender. 
+
+```{r}
+table(dat$p_race)
+dat %>%
+  filter(p_race != "unknown") %>%
+  select(p_race) %>%
+  table() %>%
+  prop.table() %>%
+  round(3)
+
+table(dat$p_gender)
+facttab(dat$p_gender)
+```
+I will check the presurvey to see if those demographics are somewhat consistent with those gained from the latter half of the main study.
+
+```{r}
+table(pre$race)
+facttab(pre$race)
+```
+
+Comparing the tables, it looks like there could not have been more than 1 Black participant whose race was later marked "unknown", and there are comparable percentages of known white, Latino, and Asian participants between the presurvey and the main study. 
+
+The UCLA admissions [demographics page](https://admission.ucla.edu/apply/student-profile) (accessed Dec. 2021) shows that for admitted freshmen, 3% are Black, 33% are Asian or Pacific Islander, 21% are Hispanic, and 25% are white. Thus, we obtained an approximately representative sample of UCLA students. 
+
+```{r}
+table(pre$gender)
+facttab(pre$gender)
+```
+
+The UCLA 2019-20 [student profile](https://apb.ucla.edu/file/43270191-33ff-4596-b8c4-1f955105563b) (accessed Dec. 2021) shows that 42% of undergraduates are male. (No statistics are shown for "other"). However, the psychology department (which constitutes over half of the sample) may have a different distribution. I have so far been unable to find a good source for this, but one [unverified source](https://www.collegefactual.com/colleges/university-of-california-los-angeles/academic-life/academic-majors/psychology/general-psychology/) claims that 75% of UCLA psychology bachelor's degrees are awarded to women.
+
+We then analyze distributions of age, employment, transfer status, and year:
+
+```{r}
+ggplot(aes(age), data = dat) + 
+  geom_histogram(binwidth=1) +
+  scale_x_continuous(breaks = c(18:34))
+
+ggplot(aes(year), data = dat) + 
+  geom_histogram(binwidth=1)
+```
+
+This study was conducted in Spring 2021. The sample is slightly overrepresentative of second- and third-years.
+
+```{r}
+facttab(dat$employ2)
+```
+
+I think it's incredibly unlikely that well over 50% of the students at UCLA don't have paid employment. I can't find a source stating how many students usually work.
+
+```{r}
+facttab(dat$transfer)
+```
+
+UCLA [campus statistics](https://apb.ucla.edu/campus-statistics/enrollment) states that UCLA's total transfer population is 30.8%.
+
+## Manipulation checks
+
+Did people honestly report whether they switched or not? 
+
+```{r}
+dat %>% 
+  filter(switched==0 & persist < 7) %>%
+  select(id)
+```
+
+Only one participant misreported not switching when they did not last all 7 parts, which is good.
+
+How much did the model manipulation checks correlate with each other?
+
+```{r}
+dat %>% 
+  select(matches("model"), -model_gender, -model_race, -model_txt, -model_score) %>%
+  cormat()
+```
+
+It seems that the `respect`, `friendly`, and `like` measures all correlate very well, so we can try to use the composite score as a measure of general feeling of warmth for the role model. 
+
+Did people generally feel similar to the role model? The average is  `r mean(dat$model_similar, na.rm=TRUE)`.
+
+```{r}
+dat %>%
+  ggplot(aes(as.numeric(model_similar))) +
+  geom_histogram(binwidth=1)
+```
+
+Plot the race and gender of role models against their composite rating. (There is only 1 model in each intersectional category.)
+
+```{r}
+dat %>%
+  group_by(img) %>%
+  mutate(med = median(model_score)) %>%
+  ungroup() %>%
+  ggplot(aes(model_score, reorder(img, med))) +
+  geom_boxplot() +
+  xlab("Composite score of general warmth towards model") +
+  ylab("Perceived model race and gender")
+```
+
+Does participant-model similarity correlate with perception of self-model similarity?
+
+```{r}
+dat %>%
+  select(model_similar,
+         post_belonging,
+         dr,
+         dg) %>%
+  cormat()
+
+dat %>%
+  ggplot(aes(model_similar, condition2)) +
+  jitter
+```
+
+Clearly, participants do not find themselves similar to the models. There are multiple explanations for this: maybe the age difference, or the difference in career path or position, made students feel dissimilar. But also, these are static pictures, not real people that the participants got to know over a period of time.
+
+Perceived similarity does not correlate with actual condition, or with sense of belonging in CS.
+
+## Task conscientiousness
+
+I worry that since we don't check for accurate work, students spent very little time on the exercises and didn't actually complete them conscientiously. From graphing everyone's results, it doesn't appear that there is a clear cutoff for those who are conscientiously doing the exercises and those who are not. Maybe 7 minutes? But at that point, users who gave more than 7 minutes per page seem almost to be outliers.
+
+```{r}
+dat %>%
+  select(matches("time_\\d"), id) %>%
+  pivot_longer(matches("time"), names_to="time", values_to="seconds") %>%
+  mutate(trial = as.numeric(substr(time, nchar(time), nchar(time))),
+         minutes = seconds/60) %>%
+  filter(minutes < 1) %>%
+  ggplot(aes(trial, minutes, color=id)) +
+  geom_path() +
+  geom_point() +
+  theme(legend.position = "none")
+```
+
+Sure enough, there are many instances where people spent less than 1 minute on the page, which is quite impossible as each page asks you to read, and also to complete the exercise. There seems to be an increase of these instances towards the later pages, which means that we could look into recoding these responses as persisting for 1 trial less than they did. I should at least filter out responses that spent less than 1 minute on trial 1. (Note: implemented this in the cleaning doc.)
+
+How long did people spend on tasks on average? There appears to be an outlier where someone in trial 3 spent 4 hours, which I take to mean that they left their program running and came back to finish the activity later. I will remove them from the analysis.
+
+```{r}
+dat %>%
+  filter(time_3 < 10000) %>%
+  select(matches("time_\\d")) %>%
+  pivot_longer(matches("time"), names_to="time", values_to="seconds") %>%
+  mutate(trial=as.numeric(substr(time, nchar(time), nchar(time))),
+         minutes=seconds/60) %>%
+  group_by(trial) %>%
+  mutate(mean_time = mean(minutes, na.rm=TRUE)) %>%
+  ungroup() %>%
+  ggplot(aes(trial, minutes)) +
+  geom_jitter() +
+  geom_point(aes(trial, mean_time), color="red", stroke=3, shape=1) +
+  stat_smooth(method="lm")
+```
+
+It appears that people spent gradually less time on each activity. (Overall linear trend represented by blue line; prediction for each trial shown in red.)
+
+## CS Attitudes
+
+Note: using definition of strong correlation as 0.7 from [West GA](https://www.westga.edu/academics/research/vrc/assets/docs/scatterplots_and_correlation_notes.pdf) (page 9)
+
+Distributions for pre-activity attitudes.
+
+```{r}
+dat %>%
+  ggplot(aes(as.numeric(pre_att_cs))) +
+  geom_histogram(binwidth=1) +
+  scale_x_continuous(breaks=1:7)
+```
+
+We reveal that only 2 students reported little to no prior interest in CS. This may be due to acquiescence/demand characteristics, or a characteristic of the subject pool (psychology students).
+
+Do the pre- and post- measures for CS interest capture a similar construct?
+
+```{r}
+dat %>%
+  select(matches("act"), 
+         -matches("txt"), 
+         -matches("att_")) %>%
+  cormat()
+```
+
+Liking and interest seem to correlate, both pre- and post-activity. (However, pre- and post-measures only correlate weakly with each other.) As expected, interest and liking correlate only weakly with relevance. Interestingly, they do not correlate with confidence at all.
+
+Strangely, usefulness and relevance appear to capture different constructs; they correlate only moderately.
+
+Note: I am now creating a pre/post_att_act variable to capture interest and liking together.
+
+```{r}
+dat %>%
+  select(matches("pre.*cs"), 
+         matches("post.*cs"),
+         -matches("txt"),
+         -matches("att_")) %>%
+  cormat()
+```
+
+This is pretty cool. Pre- and post-activity, only interest in taking a formal course and interest in self-learning correlate strongly! Except that interest and excitement correlate well both before and after.
+
+I want to explore whether variation in persistence really does reflect interest in the activity. In order to do so, I want to start out by asking whether the `fit_*` variables correlate sufficiently to create a composite score of CS belongingness. (As a side note, I wonder if the activity affected participants' answers on these measures, since we didn't have presurvey measures of CS attitudes.)
+
+These show effects of framing and how people think.
+
+```{r}
+dat %>%
+  select(matches("fit"),
+         -matches("txt")) %>%
+  summarize_all(mean, na.rm = TRUE) %>%
+  pivot_longer(matches("fit"), names_to = "fit", values_to = "mean") %>%
+  mutate(labs = c("students in a CS course", 
+                  "CS professionals", 
+                  "people who use CS at work", 
+                  "CS professors",
+                  "CS majors")) %>%
+  ggplot(aes(reorder(labs, mean), mean)) +
+  geom_bar(stat="identity") +
+  xlab("How well do you fit in with:") +
+  ylab("Mean score (1 = Do not fit in, 5 = Fit in very well)") +
+  coord_flip(ylim = c(1,5))
+  
+
+dat %>%
+  select(matches("fit"),
+         -matches("txt")) %>%
+  cormat()
+```
+
+Interestingly, these questions seemed to have captured different constructs, with perceived similarity to CS professors the most dissimilar compared with students in those same CS courses. I wonder if this is a reflection of age factors, rather than a reflection of personality traits.
+
+Overall, the trends appear to make sense: being a professional programmer only correlates weakly with having CS as part of your job; fitting in with CS majors correlates moderately with all measures having to do with CS. The professor-fit measure only correlates with CS major fit and job fit, suggesting that students (understandably) associate teaching with expertise. It is likely not due to age difference factors, since students do not associate having a job involving CS skills and teaching CS.
+
+How do utility beliefs (ie relevance and usefulness) affect intent to pursue CS or openness to changing attitude?
+
+```{r}
+dat %>%
+  select(matches("relevant"),
+         matches("useful"),
+         matches("r_att"),
+         matches("d_att_"),
+         matches("likely"),
+         -matches("txt")) %>%
+  cormat()
+
+dat %>%
+  filter(major_txt != "cognitive science") %>%
+  select(matches("relevant"),
+         matches("likely")) %>%
+  cormat()
+```
+
+Results here aren't too clear. Overall, it appears that post-activity usefulness and relevance attitudes about the activity correlate moderately with likelihood of taking a course in CS, but less for taking a job in CS and even less for learning CS on one's own. Pre-activity attitudes do not correlate with any of the above.
+
+## Persistence as a measure of interest
+
+Did the study materials yield the expected variation in persistence?
+
+```{r}
+dat %>%
+  ggplot(aes(persist)) +
+  geom_bar(fill = c) +
+  ylab("Number of participants") +
+  plot_trials
+```
+
+Yes, there is considerable variation in number of trials completed. 
+
+## Possible alternative explanations
+
+Explanations for variation in persistence that are not interest in CS or the result of feeling greater expectancy-value from seeing a role model in the field.
+
+* Chance
+* Confounding variables
+  * Model attractiveness
+* Participant characteristics
+  * GPA (conscientiousness)
+  * Prior interest in CS
+  * Age (worldly experience)
+  * Year (senioritis ?)
+  * Prior experience with CS
+  * Major (perception of relevance & prior experience)
+  * Perceptions of relevance & usefulness (utility beliefs)
+  * Employment (time spent on CS, workplace experience factoring into utility beliefs)
+  * Conscious stereotypes (descriptions of CS majors containing stereotypical language)
+  * Unconscious stereotypes (reports of percentages of white and/or Asian CS majors)
+* Participant background (other than race and gender)
+  * We did not ask if students were first-generation or what degree their mother obtained (SES)
+  * Parent(s)' experience with CS (feeds into prior experience and perceptions)
+  * Transfer status (SES)
+  * Parental attitudes about gender (stereotype)
+  * Parental attitudes about race (stereotype)
+  * Friends' attitudes about gender (stereotype)
+  * Friends' attitudes about race (stereotype)
+  * Stereotypical beliefs
+
+We can check for the above by controlling within the model OR by checking equal distribution among condition groups.
+
+Note: find literature or a good reason to back up each potential alternative explanation !!
+
+The fact that the distribution for trials completed is slightly bimodal makes me wonder whether the variation is simply due to general conscientiousness, with conscientious students always completing the lesson, but less conscientious students stopping after the first one. (Alternatively, it could just be a ceiling effect). We can plot persistence against GPA to gain more understanding of whether this is the case.
+
+```{r}
+dat %>%
+  select(gpa, 
+         age,
+         year,
+         transfer,
+         persist) %>%
+  cormat()
+```
+
+GPA does not seem to be related to number of trials completed, so something other than general conscientiousness could be at play here. Of course, many factors other than conscientiousness play into GPA. Note: What's something else we could use to measure this?
+
+Let's check whether any correlations seem to exist between time spent on the entire experiment, and prior attitudes towards computer science.
+
+```{r}
+dat %>%
+  select(pre_att_act,
+         pre_att_cs,
+         post_att_cs,
+         post_att_act,
+         persist,
+         dropoff) %>%
+  cormat()
+```
+
+There are only weak to moderate correlations here for the most part. However, it looks like pre-activity attitudes towards CS correlate with post-activity attitudes (people's attitudes towards CS are fairly stable). Post-activity interest in the activity correlates more with post-activity attitudes towards CS than pre-activity attitudes, however, indicating that your experience during the activity may change your attitudes towards CS. I wonder what the breakdown is for people who were already interested before the activity and people who had no idea what to expect.
+
+## Common-sense correlations between constructs
+
+I also want to check the correlation between some variables that I would assume are related: predicted likelihood of taking CS courses, interest in CS, interest in the activity, belongingness in CS courses, etc.
+
+```{r}
+dat %>%
+  select(matches("mom"), 
+         matches("dad"),
+         matches("parent"),
+         matches("friends")) %>%
+  cormat()
+```
+
+Only parents' and friends' stereotypical attitudes about race and feminism correlate highly enough to be composited. All other environmental variables appear to capture different constructs.
+
+```{r}
+dat %>%
+  select(mom_cs, dad_cs, likely_cs_course, pre_att_cs) %>%
+  cormat()
+```
+
+I did not expect parental experience with CS to correlate so weakly with likelihood of taking a CS course or with CS attitudes, but this makes sense if we think about generational differences. Many more people are taking CS and thinking about CS now than in our parents' generation, I think.
+
+What is interesting about people who show increased interest in computer science? Does inclusion make people more interested in CS? This activity without manipulation leads people to be less interested in computer science. This is similar to the way we teach computer science normally. Go to online programming websites and screenshot.
+
+*People are interested in CS, but don't feel like they fit. Does this affect their likelihood of actually taking the course?* Extracurriculars and CS community?
+
+```{r}
+dat %>% 
+  select(fit_cs_class, 
+         likely_cs_course, 
+         pre_att_cs,
+         pre_att_act,
+         post_att_cs, 
+         post_att_act) %>%
+  cormat()
+```
+
+Wow. It appears that the study participants did not seem to associate the activity with real CS courses, either before or after the activity. Even though they were learning some of the same concepts, their enjoyment of the activity did not correlate at all with their likelihood of taking CS courses. Prior interest in CS seems to predict likelihood of enrolling in a future CS course moderately; similarly, pre-activity CS attitudes moderately predict activity enjoyment. I can think of two other possible explanations for this trend: 
+
+* maybe students' likelihood of taking CS is dictated by their degree programs more than their interest
+  * note after other analyses: it appears that transfer students do not have the time to take computer science courses
+* or maybe this was a poorly constructed task that all students hated.
+
+```{r}
+dat %>%
+  group_by(major_txt) %>%
+  mutate(mean = mean(as.numeric(likely_cs_course), na.rm = TRUE)) %>%
+  ungroup() %>%
+  mutate(likely_cs_course = as.numeric(likely_cs_course))%>%
+  ggplot(aes(likely_cs_course, reorder(major_txt, mean))) +
+  geom_boxplot()
+```
+
+
+
+```{r}
+dat %>%
+  ggplot(aes(as.numeric(post_att_act))) +
+  geom_bar(fill = c) +
+  plot_post_interest +
+  ylab("# participants")
+```
+
+Well, that disproves the second hypothesis (of floor effects), although acquiescence and demand characteristics are still possibilities.
+
+I also realized that many students marked themselves as having taken a CS course in the past, which may invalidate half the data. We should conduct analyses with both groups and see if they differ.
+
+```{r}
+dat %>%
+  select(cs_xp, post_att_act, persist, seconds, post_belonging, dropoff) %>%
+  cormat()
+
+wilcox.test(as.numeric(post_interest_act) ~ cs_xp, data = dat)
+```
+
+Although there appears to be a shift where students who have taken CS courses before are more interested in the activity, the small sample size makes the difference not significant. 
+
+*Do people who show reduced interest in the activity also show reduced interest in computer science? (pre and post analysis)*
+
+For students who didn't have strong prior interest in CS, how did the activity change their interest in CS?
+
+```{r}
+dat %>%
+  select(d_att_cs, d_att_act, pre_att_cs, pre_att_act, post_att_act) %>%
+  cormat()
+
+dat %>%
+  ggplot(aes(d_att_cs, pre_att_cs)) +
+  jitter
+```
+
+There is a weak negative correlation between change in attitude and prior attitudes; people who had strong prior affinity did not change their attitude much, as expected. People with lower or moderate beliefs experienced some change, but the relation is not strong.
+
+There is also a weak correlation between postsurvey attitude towards the activity and attitude towards 
+CS; thus, the activity itself did not change 
+
+Why did students 
+
+Trying to find explanatory factors for students' attitudes towards CS.
+
+```{r}
+dat %>%
+  select(pre_att_cs,
+         post_att_cs,
+         d_att_cs,
+         post_difficult,
+         post_opp_cost,
+         post_belonging,
+         post_stress,
+         post_time_cost,
+         matches("r_att"),
+         matches("relative"),
+         -matches("txt")) %>%
+  cormat()
+```
+
+```{r}
+dat %>%
+  ggplot(aes(relative_difficult, post_difficult)) +
+  jitter
+```
+
+```{r}
+dat %>%
+  select(matches("growth"), matches("fixed")) %>%
+  cormat()
+```
+
+With the following graph, I can start to gain an understanding of how people view the distribution of computer scientists.
+
+```{r}
+dat %>%
+  mutate(white = p_white) %>%
+  pivot_longer(p_black:p_other,
+               names_to = "race", 
+               values_to = "percentage") %>%
+  ggplot() +
+  geom_bar(aes(reorder(id, white), 
+               percentage, 
+               fill = fct_reorder(race, percentage)), 
+           stat = "identity", 
+           position = "stack") +
+  scale_x_discrete(breaks = c(0, 100)) +
+  geom_hline(yintercept = 52.9, color = "purple", size = 2) +
+  guides(fill = guide_legend(title = "race"))
+
+sum(dat$p_aapi - 15.8) / 74
+sum(dat$p_black - 8.6) / 74
+sum(dat$p_latino - 10.2) / 74
+sum(dat$p_white - 52.9) / 74
+```
+
+Based on the information above, it seems that most people believe that white and Asian people constitute the majority of computer scientists.
+
+From the [NCES website](https://nces.ed.gov/programs/digest/d19/tables/dt19_322.30.asp), I found the actual percentages of computer science undergraduates of each background from 2017-18. From calculating a simple distance, it seems like on average, participants were very good at guessing the actual percentages of Black and Latino computer scientists - and overestimated the percentage of Asian computer scientists. Looks like stereotypes have changed since earlier studies were conducted.
+
+```{r}
+dat %>%
+  mutate(p_male = 100 - p_female,
+         p_female2 = p_female) %>%
+  pivot_longer(c("p_female", "p_male"), names_to = "gender", values_to = "p") %>%
+  ggplot() +
+  geom_bar(aes(reorder(id, p_female2), p, fill = gender), 
+           stat = "identity", 
+           position = "stack") +
+  scale_x_discrete(breaks = c(0, 100)) +
+  scale_y_continuous(n.breaks = 11)
+```
+
+~100% of participants believe that there are less females than males.
+
+```{r}
+dat %>%
+  ggplot(aes(st_sum)) +
+  geom_bar()
+```
+
+## Sources
+
+[Correlation matrices](https://rstudio-pubs-static.s3.amazonaws.com/240657_5157ff98e8204c358b2118fa69162e18.html)

@@ -1,0 +1,678 @@
+---
+title: "Analysis"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(multicon)
+library(tm)
+library(CourseKataData)
+library(lubridate)
+library(survival)
+library(survminer)
+library(gtsummary)
+```
+
+## Table of contents
+
+* [Import data](#import-data)
+* [Model liking](#model-liking)
+* [Survival analysis](#survival-analysis)
+* [Hierarchical linear regression](#hierarchical-linear-regressions)
+* [Exploratory analyses](#exploratory-analyses)
+* [Race, class, and gender](#race-class-and-gender)
+* [Textual analysis](#textual-analysis)
+* [Output](#output)
+
+## Import data
+
+```{r, include=FALSE}
+dat <- readRDS("C:/Users/notka/Documents/Folder/College/Research/TALL/urfp-local/dat.rds")
+pre <- readRDS("C:/Users/notka/Documents/Folder/College/Research/TALL/urfp-local/pre.rds")
+```
+
+```{r, include=FALSE}
+#dat <- dat %>%
+#  select(-progress,
+#         -pre_like_act,
+#         -pre_interest_act,
+#         -post_like_act,
+#         -post_interest_act,
+#         -pre_excite_cs,
+#         -pre_interest_cs,
+#         -post_excite_cs,
+#         -post_interest_cs
+#         )
+```
+
+*Try making your own ggplot themes* Customize functions (hidden)
+
+```{r plots, include=FALSE}
+# Plot objects
+
+c <- "grey30"
+s <- 3
+w <- 0.1
+h <- 0.1
+
+plot_trials <- list(xlab("Number of trials voluntarily completed"),
+                    scale_x_continuous(breaks = 1:7))
+
+plot_post_interest <- list(xlab("Post-test interest in activity (1 = Strongly dislike, 6 = Strongly like)"),
+                           scale_x_discrete(breaks = 0:6, labels = 0:6, limits = 0:6))
+
+jitter <- geom_jitter(width = w, height = h)
+
+alpha_point <- geom_point(color = c, size = s, alpha = 0.5)
+
+fct_neither_order <- c("Strongly disagree", 
+                       "Somewhat disagree", 
+                       "Neither agree nor disagree", 
+                       "Somewhat agree", 
+                       "Strongly agree")
+```
+
+```{r}
+nms <- dat %>% 
+  select_if(is.factor) %>%
+  select(-matches("gender|race|major")) %>%
+  names()
+
+dat[,names(dat) %in% nms] <- lapply(dat[,names(dat) %in% nms], 
+                                    as.numeric)
+```
+
+## Quantitative analyses
+
+Statistics notes: 
+
+* multilevel regressions are for dependency in groups within groups - hierarchical structure 
+* multiple regressions are for more than one predictor (use lm() with +)
+* interactions are tested for using lm() with \*
+* try using ANOVA to compare multiple models as well as simple and complex models: `summary(anova(mod1, mod2))`
+* how to analyze Likert scales? [Evidence indicates](https://statisticsbyjim.com/hypothesis-testing/analyze-likert-scale-data/) it may be ok to use regular T tests?? at least compared to nonparametric tests that don't assume continuity
+* try factor analysis with all of the survey items that look like they *might* measure the same construct.
+* in regressions with multi-level categorical explanatories, do levels have to be ordinal? I think I need to transform the model_race, p_race, and major measures so that they are binary coded? 
+* try Mann-Whitney or Kruskal Wallis because persist and dropoff are not normally distributed outcomes
+* I am going to try hierarchical linear regression a la Leaper et al.
+* ANOVA assumptions violated: persistence is not normal. what to do? also test for homogeneity of variance?
+
+### Model liking
+
+Maybe people liked a certain gender or race better overall ?
+
+Since race is categorical, but model rating is quantitative, let's try a 2-way ANOVA.
+
+```{r}
+summary(aov(lm(model_score ~ model_gender * model_race, data = dat)))
+summary(aov(lm(model_friendly ~ model_gender * model_race, data = dat)))
+summary(aov(lm(model_respect ~ model_gender * model_race, data = dat)))
+summary(aov(lm(model_like ~ model_gender * model_race, data = dat)))
+summary(aov(lm(model_score ~ img, data = dat)))
+
+dat %>%
+  ggplot(aes(model_like, model_gender)) +
+  geom_jitter()
+```
+
+Participants did not have a significant preference for any race or gender overall. This is expected.
+
+Interestingly, we did not find an intersectional effect for consciously reported liking.
+
+
+## Survival analysis
+
+*Poisson (survival curve).* [Rhodes et al open science framework/portal](https://osf.io/39x7w/)
+
+```{r}
+dat$dg <- ifelse(dat$dg == TRUE, "gender mismatch", "gender match")
+dat$dg <- factor(dat$dg, levels = unique(dat$dg))
+
+dat$dr <- ifelse(dat$dr == TRUE, "race mismatch", "race match")
+dat$dr <- factor(dat$dr, levels = unique(dat$dr))
+
+dat$censor <- ifelse(dat$persist < 7, 1, 0)
+```
+
+```{r}
+summary(glm(persist ~ dr * dg, family = "poisson", data = dat))
+```
+
+```{r}
+surv_obj <- Surv(dat$persist, dat$censor)
+surv_obj
+
+surv_mod <- coxph(surv_obj ~ dg * dr, data = dat)
+summary(surv_mod)
+
+# summary(coxph(surv_obj ~ age + year + gpa +
+#                           model_score + model_race + model_gender +
+#                           mom_cs + dad_cs + cs_xp + pre_att_cs + pre_useful_act + pre_relevant_act +
+#                           major + transfer + employ2 +
+#                           dg * dr * p_gender * p_race, 
+#               data = dat))
+
+surv_mod2 <- coxph(surv_obj ~ age + year + gpa +
+                          model_score + model_race + model_gender + p_gender + p_race +
+                          mom_cs + dad_cs + cs_xp + pre_att_cs + pre_useful_act + pre_relevant_act +
+                          major + transfer + employ2 +
+                          dg * dr, 
+              data = dat)
+
+# summary(coxph(surv_obj ~ post_belonging + p_white + model_similar + likely_cs_course, 
+#               data = dat))
+
+surv_tab <- as.data.frame(coef(summary(surv_mod2)))
+surv_tab
+```
+
+```{r}
+#Break it down by gender to report and graph
+
+ydg <- dat %>%
+  filter(dg == "gender mismatch")
+ndg <-dat %>%
+  filter(dg == "gender match")
+
+#Gender mismatch
+surv_obj1<-Surv(time = ydg$persist, event = ydg$censor)
+surv_obj1
+fit1<-survfit(surv_obj1 ~ dr, data = ydg)
+summary(fit1)
+graph1<-ggsurvplot(fit1, 
+                       data = ydg, 
+                       palette =  c("purple", "darkgreen"), 
+                       pval = TRUE, 
+                       conf.int = TRUE, 
+                       conf.int.alpha = .20, 
+                       break.time.by = 1, 
+                       risk.table = "percentage", 
+                       conf.int.style = "ribbon", 
+                       legend.title = "Race mismatch", 
+                       legend.labs = c("Yes", "No"), 
+                       xlab = "Trial", 
+                       ylab = "Probability of Persisting", 
+                       risk.table.title = "Percentage of Participants with Gender Mismatch Persisting", 
+                       ggtheme = theme_light(), 
+                       risk.table.y.text.col = T, 
+                       risk.table.y.text = FALSE, 
+                       risk.table.height = .30)
+graph1
+
+print(graph1)
+```
+
+```{r}
+surv_summary(fit1)
+
+res1<-coxph(surv_obj1 ~ dr, data = ydg)
+summary(res1)
+
+test.ph1<-cox.zph(res1)
+test.ph1
+
+table1<-as.data.frame(coef(summary(res1)))
+table1
+```
+
+```{r}
+#Gender match
+surv_obj2<-Surv(time = ndg$persist, event = ndg$censor)
+surv_obj2
+fit2<-survfit(surv_obj2 ~ dr, data = ndg)
+summary(fit1)
+graph2<-ggsurvplot(fit2, data = ndg, 
+                   palette =  c("purple", "darkgreen"), 
+                   pval = TRUE, 
+                   conf.int = TRUE, 
+                   conf.int.alpha = .20, 
+                   break.time.by = 1, 
+                   risk.table = "percentage", 
+                   conf.int.style = "ribbon", 
+                   legend.title = "Race mismatch", 
+                   legend.labs = c("Yes", "No"), 
+                   xlab = "Trial", 
+                   ylab = "Probability of Persisting", 
+                   risk.table.title = "Percentage of Participants with Gender Matching Persisting", 
+                   ggtheme = theme_light(), 
+                   risk.table.y.text = FALSE, 
+                   risk.table.height = .30)
+
+graph2
+```
+
+```{r}
+res2<-coxph(surv_obj2 ~ dr, data = ndg)
+summary(res2)
+table2<-as.data.frame(coef(res2))
+table2
+
+
+test.phb<-cox.zph(res2)
+test.phb
+
+```
+
+```{r}
+#Bring graphs together
+
+splots<-list(graph1, graph2)
+
+Figure1<-arrange_ggsurvplots(splots, print = TRUE, ncol = 2, nrow = 1, title = NA) 
+  
+Figure1  
+
+print(Figure1)
+```
+
+Sample caption: "Figure 1.  The survival curves for male and female participants by Language condition; p-values are from log-rank tests. Time 0 simply indicates that everyone had the opportunity to play the first trial of the game. As shown by the substantial drop from time 0 to time 1, many children chose to play no additional trials of the game after the four experimenter-controlled trials, and the drop in the number of children playing the science game was particularly pronounced among girls in the “Be Scientist” condition. Tests of the proportional hazards assumption confirmed that this assumption was met for the model as a whole and for the key Gender X Condition interaction, but violated for the subsumed main effect of Gender. One way of addressing this issue is to examine effects of condition separately by gender, as we have done here. Also, follow-up analyses including a Gender X Time interaction in the model, another recommended approach for addressing this issue (Fox & Weisberg, 2011), revealed an identical pattern of findings (see https://osf.io/p8f7w/ for full output of that model)."
+
+*Check assumptions for Cox PH*
+
+## Hierarchical linear regressions
+
+Controlling for all possible alternative explanations that we collected data for, what are our main findings?
+
+Note: in making models, I've seen many people enter a ton of variables as controls - what is the difference between an overfitted model and a well-controlled one?
+
+The problem with the regular linear model is that we are violating the assumption of normally distributed outcome (persistence is bimodal). I would then use a poisson model to look at events, except that poisson models assume that dropoff events are independent. (? can we actually use poisson?) Thus, survival analysis may be best.
+
+1. Base models for dropoff after first task
+
+```{r}
+#Make sure each model uses the same number of observations
+dat <- filter(dat, !is.na(age), !is.na(gpa), !is.na(dad_cs), !is.na(mom_cs))
+
+#Filter out participants whose race was unknown and participants whose race was Black, because we wanted to analyze differences based on participants' race, and these two groups are either not meaningful or not large enough, respectively, to be appropriately analyzed
+
+#Not sure if it is better to do this, and drastically decrease sample size and power, since we are just controlling for participant race
+
+#dat <- filter(dat, p_race != "unknown", p_race != "black")
+#View(dat)
+```
+
+```{r}
+dropoff_ctrls <- lm(dropoff ~ age + year + gpa, 
+                    data = dat)
+
+dropoff_dem <- lm(dropoff ~ age + year + gpa +
+                            model_score + model_race + model_gender + p_gender + p_race,
+                  data = dat)
+                  
+dropoff_xp <- lm(dropoff ~ age + year + gpa +
+                            model_score + model_race + model_gender + p_gender + p_race +
+                            mom_cs + dad_cs + cs_xp + pre_att_cs + pre_useful_act + pre_relevant_act,                            
+                 data = dat)
+
+dropoff_req <- lm(dropoff ~ age + year + gpa +
+                            model_score + model_race + model_gender + p_gender + p_race +
+                            mom_cs + dad_cs + cs_xp + pre_att_cs + pre_useful_act + pre_relevant_act +
+                            major + transfer + employ2,
+                  data = dat)
+```
+
+  a. Condition
+
+```{r}
+dropoff_condition <- lm(dropoff ~ age + year + gpa +
+                                  model_score + model_race + model_gender + p_gender + p_race +
+                                  mom_cs + dad_cs + cs_xp + pre_att_cs + pre_useful_act + pre_relevant_act +
+                                  major + transfer + employ2 +
+                                  dr * dg, 
+                                  data = dat)
+
+anova(dropoff_ctrls, dropoff_dem, dropoff_xp, dropoff_req, dropoff_condition) 
+summary(dropoff_condition)
+```
+
+2. Continuous persistence across 7 tasks
+
+a. Base models
+
+```{r}
+persist_ctrls <- lm(persist ~ age + year + gpa, 
+                    data = dat)
+
+persist_dem <- lm(persist ~ age + year + gpa +
+                            model_score + model_race + model_gender + p_gender + p_race,
+                  data = dat)
+
+persist_xp <- lm(persist ~ age + year + gpa +
+                           model_score + model_race + model_gender + p_gender + p_race +
+                           mom_cs + dad_cs + cs_xp + pre_att_cs + pre_useful_act + pre_relevant_act,
+                 data = dat)
+
+persist_req <- lm(persist ~ age + year + gpa +
+                           model_score + model_race + model_gender + p_gender + p_race +
+                           mom_cs + dad_cs + cs_xp + pre_att_cs + pre_useful_act + pre_relevant_act +
+                           major + transfer + employ2, 
+                  data = dat)
+```
+
+b. Condition and persistence
+
+```{r}
+persist_condition <- lm(persist ~ age + year + gpa + employ2 +
+                                  model_score + model_race + model_gender + p_gender + p_race +
+                                  mom_cs + dad_cs + cs_xp + pre_att_cs + pre_useful_act + pre_relevant_act +
+                                  major + transfer + employ2 +
+                                  dg * dr,
+                        data = dat)
+
+anova(persist_ctrls, persist_dem, persist_xp, persist_req, persist_condition)
+summary(persist_condition)
+```
+
+c. Perceived model similarity to self and persistence
+
+```{r}
+persist_sim <- lm(persist ~ age + year + gpa + employ2 +
+                            model_score + model_race + model_gender + p_gender + p_race +
+                            mom_cs + dad_cs + cs_xp + pre_att_cs + pre_useful_act + pre_relevant_act +
+                            major + transfer +
+                            model_similar,
+                      data = dat)
+
+anova(persist_ctrls, persist_dem, persist_xp, persist_req, persist_sim)
+summary(persist_sim)
+```
+
+d. Belonging and persistence
+
+```{r}
+persist_belong <- lm(persist ~ age + year + gpa + employ2 +
+                            model_score + model_race + model_gender + p_gender + p_race +
+                            mom_cs + dad_cs + cs_xp + pre_att_cs + pre_useful_act + pre_relevant_act +
+                            major + transfer +
+                            post_belonging * st_sum,
+                     data = dat)
+
+anova(persist_ctrls, persist_dem, persist_xp, persist_req, persist_belong)
+summary(persist_belong)
+```
+
+e. Stereotype beliefs and persistence
+
+```{r}
+persist_stereotype <- lm(persist ~ age + year + gpa + employ2 +
+                                  model_score + model_race + model_gender + p_gender + p_race +
+                                  mom_cs + dad_cs + cs_xp + pre_att_cs + pre_useful_act + pre_relevant_act +
+                                  major + transfer + st_sum,
+                         data = dat)
+
+anova(persist_ctrls, persist_dem, persist_xp, persist_req, persist_stereotype)
+summary(persist_stereotype)
+```
+
+f. [Poisson model](https://www.dataquest.io/blog/tutorial-poisson-regression-in-r/) with participant gender and race ??
+
+```{r}
+dat2 <- filter(dat, p_race != "black")
+summary(glm(persist ~ age + year + gpa + employ2 +
+                      model_score + model_race + model_gender +
+                      mom_cs + dad_cs + cs_xp + pre_att_cs + pre_useful_act + pre_relevant_act +
+                      major + transfer + employ2 +
+                      dg * dr * p_gender * p_race,
+                        data = dat2, family="poisson"))
+dat2 <- filter(dat, p_race != "unknown", p_race != "black")
+
+summary(glm(persist ~ age + year + gpa + employ2 +
+                      model_score + model_race + model_gender +
+                      mom_cs + dad_cs + cs_xp + pre_att_cs + pre_useful_act + pre_relevant_act +
+                      major + transfer + employ2 +
+                      p_gender * p_race,
+                        data = dat2, family="poisson"))
+```
+
+3. Gender and race matching predicting total time spent across 7 tasks.
+
+```{r}
+seconds_ctrls <- lm(seconds ~ age + gpa + year + employ2, 
+                              data = dat)
+
+seconds_dem <- lm(seconds ~ age + gpa + year + employ2 +
+                            model_score + model_race + model_gender + p_gender + p_race,
+                            data = dat)
+                      
+seconds_xp <- lm(seconds ~ age + gpa + year + employ2 +
+                            model_score + model_race + model_gender + p_gender + p_race +
+                            mom_cs + dad_cs + cs_xp + pre_att_cs + pre_useful_act + pre_relevant_act,
+                            data = dat)
+
+seconds_req <- lm(seconds ~ age + gpa + year + employ2 +
+                            model_score + model_race + model_gender + p_gender + p_race +
+                            mom_cs + dad_cs + cs_xp + pre_att_cs + pre_useful_act + pre_relevant_act +
+                            major + transfer,
+                            data = dat)
+```
+
+```{r}
+seconds_condition <- lm(seconds ~ age + gpa + year + employ2 +
+                                  model_score + model_race + model_gender + p_gender + p_race +
+                                  mom_cs + dad_cs + cs_xp + pre_att_cs + pre_useful_act + pre_relevant_act +
+                                  major + transfer +
+                                  dr * dg,
+                                  data = dat)
+
+anova(seconds_ctrls, seconds_dem, seconds_xp, seconds_req, seconds_condition)
+summary(seconds_condition)
+```
+
+4. Predicting CS attitudes
+
+First, pivot table so that time (doing the activity itself) is a predictor. (How to do repeated-measures analyses? When I tried this, things ended up being way too significant because each participant's data was counted twice.)
+
+```{r}
+# dat_att <- dat %>%
+#   mutate(pre_att = pre_att_cs) %>%
+#   pivot_longer(matches("p.*_att_cs"), names_to = "timepoint", values_to = "attitude") 
+```
+
+```{r}
+summary(aov(d_att_cs ~ age + gpa + year + employ2 +
+                          model_score + model_race + model_gender + p_gender + p_race +
+                          mom_cs + dad_cs + cs_xp + pre_useful_act + pre_relevant_act +
+                          major + transfer,
+                          data = dat))
+
+summary(aov(pre_att_cs ~ age + gpa + year + employ2 +
+                          model_score + model_race + model_gender + p_gender + p_race +
+                          mom_cs + dad_cs + cs_xp + pre_useful_act + pre_relevant_act +
+                          major + transfer,
+                          data = dat))
+
+summary(aov(post_att_cs ~ age + gpa + year + employ2 +
+                          model_score + model_race + model_gender + p_gender + p_race +
+                          mom_cs + dad_cs + cs_xp + pre_useful_act + pre_relevant_act +
+                          major + transfer,
+                          data = dat))
+```
+
+As expected, no significant difference in CS attitudes was obtained.
+
+The above results need to be checked for influential outliers.
+
+I'm surprised that previously established attitudes don't contribute to persistence. It's true that students will be interested in CS for different reasons and purposes; either they are not interested in psychological statistics, or the activity surprised them in that it did not fit with their expectations of CS.
+
+Likelihood of taking a CS course *very* significantly predicts persistence - but, this effect goes away (is mediated fully) when transfer status is taken into account. For some reason, transfer status correlates a large amount with task persistence in all 3 models.
+
+While matching the model to the gender and race of the participant did not appear to have any effect on participants' persistence, perceived similarity of model to self did significantly predict persistence, even when controlling for a myriad of personality and background characteristics. It is difficult to determine what this result means, since we only manipulated whether the model matched the participants' characteristics, NOT whether participants actually felt a closeness to the model or not. 
+
+The outputs below show that models matching participants' gender significantly increased sense of similarity. However, we cannot say that gender matching mediates the relationship between sense of similarity and persistence, because the models above show no significant effect of gender matching if other variables are controlled for; the XXX test of mediation requires that both A>C and B>C, but in this case only one condition (sense of similarity and persistence) was fulfilled. (Note: Check this. Are we talking about correlations or ANOVAs for the mediation test?)
+
+```{r}
+summary(aov(model_similar ~ dg * dr, data = dat))
+
+dat %>%
+  ggplot(aes(dg, model_similar)) +
+  jitter
+```
+
+Did we ask students whether they thought the activity was difficult?
+
+*Answer pilot type questions. Compare across outcomes variables with difference in responses, gender, race. People who persist and don't persist.* 
+
+There is a moderate correlation between interest in CS and intention to take a CS course, indicating the existence of other contributing factors.
+
+```{r}
+chisq.test(dat$pre_att_cs, y = dat$post_att_cs)
+t.test(dat$pre_att_cs, y = dat$post_att_cs, paired = TRUE)
+```
+
+There appears to be no significant difference between people's interest in CS before the study and after the study.
+
+## Race, class, and gender
+
+Exploratory analyses based on survey data.
+
+Does prior interest in CS correlate with demographics?
+
+```{r}
+dat_rac <- filter(dat, p_race != "unknown", p_race != "black", p_race != "")
+```
+
+
+```{r}
+vlines <- dat_rac %>%
+  group_by(p_race) %>%
+  summarize(avg = mean(as.numeric(pre_att_cs)))
+
+dat_rac %>%
+  ggplot(aes(pre_att_cs)) + 
+  geom_bar() +
+  facet_wrap(~p_race) +
+  geom_vline(data = vlines, aes(xintercept = avg))
+
+chisq.test(dat_rac$p_race, dat_rac$pre_att_cs)
+```
+
+There was insufficient data to draw any particular conclusions.
+
+```{r}
+summary(aov(likely_cs_course ~ parents_fem * p_gender, data = dat))
+```
+
+While parents' gender-role beliefs strongly predict students' likelihood of taking a CS course, there is no interaction between gender and gender-role beliefs, meaning that the relationship we see is likely caused by parents' background which also causes them to have strong gender-role beliefs.
+
+```{r}
+summary(lm(persist ~ p_gender * p_race, data = dat_rac))
+```
+
+```{r}
+summary(lm(post_belonging ~ p_gender * p_race, data = dat_rac))
+summary(lm(fit_cs_skill ~ p_gender * p_race, data = dat_rac))
+```
+
+Students do not seem to care much about their fit in a CS course to determine how interested they are in CS, counter to the theories of Master, Eccles, and Leaper. This finding is especially significant because the sample consists of women. This difference may have arisen due to the sample (educated and adult).
+
+```{r}
+summary(aov(pre_att_cs ~ p_gender * p_race + fit_cs_class, data = dat_rac))
+```
+
+## Other explorations
+
+I suspect that students will be more likely to drop off if they are taking the study late at night...
+
+```{r}
+dat %>%
+  ggplot(aes(hour(time), persist)) +
+  geom_jitter()
+
+dat %>%
+  ggplot(aes(time, persist)) +
+  geom_jitter(width = 0.1, height = 0.1)
+```
+
+*For students who have high stereotypic beliefs, are invested in CS, are given a non-matching and highly stereotypic (eg white/Asian male) role model: what do outcomes look like, compared to others?*
+
+## Textual analysis
+
+Using a new package called `tm` (text mining). Followed a [guide on text mining](http://www.sthda.com/english/wiki/text-mining-and-word-cloud-fundamentals-in-r-5-simple-steps-you-should-know).
+
+I've noticed that what I really want are adjectives and nouns, not so much verbs or articles or prepositions.
+
+*Try the tidytext package. Option to include negaters.*
+
+*Look at gender differences.*
+
+*Sentiment analysis. Positive/negative. Length of response as measure of engagement. Topic analysis?*
+
+[Guide to text mining with tidytext](https://www.tidytextmining.com/)
+
+Ideas: archival data, with computer science textbooks ? Lectures? Transcripts ?
+
+Some overlap between response coding and text mining. 
+
+Pennebaker created Liwc for sentiment analysis in clinical context. 
+
+```{r}
+resps <- dat %>%
+  select(id, stereotype_txt) %>%
+  filter(!is.na(stereotype_txt)) %>%
+  mutate(doc_id = id,
+         text = stereotype_txt)
+
+text <- Corpus(DataframeSource(resps))
+text <- text %>% 
+  tm_map(removeWords, stopwords("english")) %>%
+  tm_map(content_transformer(tolower)) %>%
+  tm_map(removePunctuation) %>%
+  tm_map(stemDocument) %>%
+  tm_map(removeWords, c("they", "peopl", "comput", "code", "program*",
+                        "like", "interest", "good", "also", "probabl",
+                        "person", "this", "use", "may", "someon", "spend",
+                        "look", "might", "tend", "lot", "time", "enjoy",
+                        "work", "wear", "stereotyp", "play", "think", "averag",
+                        "frequent", "typic", "thing", "job", "imagin", "the",
+                        "scienc"))
+
+text_results <- as.matrix(TermDocumentMatrix(text))
+text_results <- sort(rowSums(text_results), decreasing = TRUE) 
+text_results <- data.frame(words = names(text_results), freq = text_results) %>%
+  arrange(desc(freq))
+
+row.names(text_results) = 1:nrow(text_results)
+
+text_results %>%
+  arrange(desc(freq)) %>%
+  head(15) %>%
+  ggplot(aes(freq, words)) +
+  geom_col()
+```
+
+While the above methods provide some interesting information, it is not very useful. A better approach would be to code responses by hand, noting where responses confirm stereotypes or serve to distance the speaker from computer scientists as a group. From the pilot data, I could create a codebook.
+
+Note: look at previously published studies for codebooks and code these responses based on that (in a separate document).
+
+*Apply for undergraduate research grants for Mechanical Turk* Wider age range and familiarity with technology
+UCLA is a special population
+Ask Ji about CalState LA
+Look into opening data collection in Sona over the summer
+
+Compare the stereotype data with Mary's study and mine
+
+Do students' perceptions of fit affect their likelihood of taking a CS course or self studying? In other words, do stereotypic beliefs have an impact on students' interest in learning CS as a supplementary skill, which can possibly increase wage earnings?
+
+## Print output
+
+Note: why is this so hard ???
+
+```{r}
+# t1 <- tbl_regression(dropoff_condition)
+t2 <- tbl_regression(persist_condition)
+t2
+
+surv_tab <- tbl_regression(surv_mod2)
+surv_tab
+# t4 <- tbl_regression(seconds_main)
+# 
+# tbl_merge(tbls = list(t1, t2, t4),
+#           tab_spanner = c("Dropoff after 1st activity", "Total activities completed", "Total time spent")) 
+#   #as_flex_table() %>%
+#   #flextable::save_as_docx(path = "word.docx")
+```
+
+## Sources
+[gtsummary](https://www.danieldsjoberg.com/gtsummary/)

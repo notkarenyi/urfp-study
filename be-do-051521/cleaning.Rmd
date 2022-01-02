@@ -1,0 +1,683 @@
+---
+title: "Cleaning"
+output: html_document
+---
+
+[View the study]
+(https://uclapsych.qualtrics.com/jfe/preview/SV_6yf3eXuPP92MSTs?Q_CHL=preview&Q_SurveyVersionID=current)
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(multicon)
+library(tm)
+library(lubridate)
+```
+
+## Study change log
+
+* Friday 5/28/21: discovered that I had neglected to grant automatic credit for part 1.
+* Saturday 5/29/21: sent email asking participants to contact me if they had not successfully been granted credit for part 1.
+* Sunday 5/30/21: discovered bug where participants would be given the word task even if they had finished the study.
+* Sunday 5/30/21: discovered bug where participants would not be allowed to switch out of task if they had chosen "switch" on choice 3.
+* Monday 5/31/21: discovered one entry with a bug where the gender was coded as 6 for literally no reason. Tried to fix by making the adjustment block change the gender to 1 if it detected a gender greater than 2 (as opposed to only adjusting for a gender of 3).
+* Monday 5/31/21: considered that I could just randomly assign participants to any of the conditions without first randomizing based on participant demographics, but rejected based on premise that the current sample is very unrepresentative overall.
+* Tuesday 6/1/21: realized that some participants have been inputting their student ID for the participation ID question. Added question validation to limit response length to 4 digits. 
+* Tuesday 6/1/21: anonymized presurvey and re-formatted questions for data collection.
+
+* Additional notes: Wednesday 10:04 AM there is a response that may be invalidated because there was little to no delay between part 1 and part 2. Should have found their record instead of asking them to take it again.
+* Subject 9924 reported their personal email address as their ID. I have permanently changed this information in the record. I do not know this subject and do not presume that this information has invalidated their response.
+* Lots of missing data. We should make questions required.
+* Better keep a consistent scale for Likert questions.
+
+## Import
+
+NOTE: this data is NOT the raw data from Qualtrics
+
+* I separated the first and second repetitions of the same questions into separate pages
+* I also renamed the emotions questions
+
+I could do the below in many fewer lines of code if I knew how the duplication fixer on `read_xlsx` worked. My current method requires a manual separation of the duplicated columns from the rest of the data, which is a pain.
+
+```{r}
+dat <- read.csv("060421.csv")
+
+pre <- read.csv("060421_pre.csv")
+```
+
+Now I will rename the data using the key page on my Excel sheet, which I also made manually. The list is semi-automatically generated using regex find-and-replace.
+
+```{r, include=FALSE}
+names(dat) <- c("delete",
+                "time",
+                "delete",
+                "progress",
+                "seconds",
+                "delete", "delete", "delete", "delete", "delete",
+                "id",
+                "pre_interest_act",
+                "pre_like_act",
+                "pre_useful_act",
+                "pre_relevant_act",
+                "pre_r_att",
+                "pre_r_att_txt",
+                "pre_enjoy_cs",
+                "pre_learn_cs",
+                "pre_course_cs",
+                "pre_interest_cs",
+                "pre_excite_cs",
+                "pre_conf_cs",
+                "pre_conf_act",
+                "delete", "delete",
+                "time_1",
+                "delete",
+                "choice_1",
+                "delete", "delete",
+                "time_2",
+                "delete",
+                "choice_2",
+                "delete", "delete",
+                "time_3",
+                "delete",
+                "choice_3",
+                "delete", "delete",
+                "time_4",
+                "delete",
+                "choice_4",
+                "delete", "delete",
+                "time_5",
+                "delete",
+                "choice_5",
+                "delete", "delete", "delete",
+                "time_6",
+                "delete",
+                "choice_6",
+                "delete", "delete", "delete",
+                "time_7",
+                "delete", "delete", "delete", "delete", "delete", "delete", 
+                "delete", "delete", "delete", "delete", "delete", "delete", 
+                "delete", "delete", "delete", "delete", "delete", "delete", 
+                "delete", "delete", "delete",
+                "stereotype_txt",
+                "p_female",
+                "p_black",
+                "p_aapi",
+                "p_latino",
+                "p_white",
+                "p_other",
+                "switched",
+                "switch_txt",
+                "stay_txt",
+                "post_interest_act",
+                "post_like_act",
+                "post_useful_act",
+                "post_relevant_act",
+                "cs_xp",
+                "cs_course_txt",
+                "no_cs_course_txt",
+                "likely_cs_course",
+                "likely_cs_job",
+                "likely_self_learn",
+                "future_txt",
+                "post_r_att",
+                "post_r_att_txt",
+                "post_interest_cs",
+                "post_excite_cs",
+                "post_conf_cs",
+                "post_conf_act",
+                "post_belonging",
+                "post_difficult",
+                "post_opp_cost",
+                "post_stress",
+                "post_time_cost",
+                "post_growth",
+                "post_fixed1",
+                "post_fixed2",
+                "post_fixed3",
+                "fit_cs_class",
+                "fit_cs_job",
+                "fit_cs_skill",
+                "fit_cs_teach",
+                "fit_cs_major",
+                "relative_effort",
+                "relative_difficult",
+                "relative_school",
+                "year",
+                "hs_usa",
+                "hs_int",
+                "age",
+                "gpa",
+                "major_txt",
+                "transfer",
+                "employ",
+                "help",
+                "model_similar",
+                "model_respect",
+                "model_friendly",
+                "model_like",
+                "model_txt",
+                "fem_exposure",
+                "race_exposure",
+                "delete",
+                "parents_fem",
+                "friends_fem",
+                "delete", "delete",
+                "parents_race",
+                "friends_race",
+                "friends_cs",
+                "mom_cs",
+                "dad_cs",
+                "delete", "delete", "delete", "delete",
+                "model_gender",
+                "model_race",
+                "p_gender",
+                "p_race",
+                "delete",
+                "condition",
+                "delete", "delete",
+                "img",
+                "delete")
+
+dat <- dat %>%
+  select(-delete, -matches("choice")) %>%
+  tail(nrow(dat) - 2)
+```
+
+Record original options
+
+```{r}
+opts <- data.frame(names = names(dat))
+for (i in seq_along(dat)) {
+  if (length(unique(dat[[i]])) < 10 && length(unique(dat[[i]])) > 1){
+    if (typeof(dat[[i]]) == "character") {
+      opts$opts[[i]] <- list(sort(unique(dat[[i]])))
+    } else {
+      opts$opts[[i]] <- list(unique(dat[[i]]))
+    }
+  } else {
+    opts$opts[[i]] <- list(0)
+  }
+}
+```
+
+Since IDs were randomly generated, they are not unique. I will create a truly unique ID.
+
+```{r}
+dat <- dat %>%
+  mutate(pid = paste(second(time), id, sep="")) %>%
+  select(-id) %>%
+  rename(id = pid)
+```
+
+Create time capsule for quality check.
+
+```{r}
+dat_orig <- dat
+```
+
+## Data types
+
+### Continuous variables
+
+Convert to double.
+
+```{r}
+#Time intervals
+for (i in seq_along(dat)) {
+  if (str_detect(names(dat[i]), "time_\\d")) {
+    dat[,i] <- as.numeric(dat[,i])
+  } 
+}
+
+#Racial representation in CS
+for (i in seq_along(dat)) {
+   if (str_detect(names(dat[i]), "p_") && !str_detect(names(dat[i]), "race|gender|cost")) {
+    dat[,i] <- as.numeric(dat[,i])
+  } 
+}
+
+#GPA
+dat <- dat %>%
+  mutate(seconds = as.numeric(seconds),
+         time = parse_datetime(time),
+         gpa = as.numeric(gpa),
+         age = as.numeric(age))
+```
+
+There is one observation that messes up cleaning the data later because it is missing 1 value for pre_conf_cs. I will impute "Neither agree nor disagree" since this is both neutral and a reasonable way of interpreting a nonresponse. (This was not an option on the item, so I will also know that it is a false value.)
+
+```{r}
+dat <- mutate(dat, pre_conf_cs = ifelse(pre_conf_cs=="", 
+                                        "Neither agree nor disagree",
+                                        pre_conf_cs))
+```
+
+### Interval items
+
+```{r}
+dat <- mutate(dat, year = case_when(year=="Freshman" ~ 1,
+                                      year=="Sophomore" ~ 2,
+                                      year=="Junior" ~ 3,
+                                      year=="Senior" ~ 4))
+dat <- dat %>%
+  mutate(employ2 = case_when(employ=="I don't currently have paid employment" ~ 0,
+                              employ=="1-10 hours per week" ~ 1,
+                              employ=="11-20 hours per week" ~ 2,
+                              employ=="21-30 hours per week" ~ 3,
+                              employ=="31-40 hours per week" ~ 4,
+                              employ=="40+ hours per week" ~ 5))
+
+dat <- mutate(dat, transfer = factor(transfer, unique(transfer), c(FALSE,TRUE)))
+```
+
+### Binary survey items
+
+Convert binary scales to numeric
+
+```{r}
+nm <- dat %>%
+  select(hs_usa,
+         help,
+         switched,
+         cs_xp) %>%
+  names()
+
+dat <- mutate_at(dat, nm, ~case_when(. == "Yes" ~ 1,
+                                      . == "No" ~ 0))
+```
+
+### Condition, gender, race
+
+Create the condition in integer form in order to semi-quantify model-participant similarity.
+
+```{r}
+dat <- dat %>%
+  mutate(condition2 = case_when(condition == "dg" ~ 1,
+                                condition == "db" ~ 0,
+                                condition == "na" ~ 2,
+                                condition == "dr" ~ 1))
+
+dat <- dat %>%
+  mutate(dg = condition=="dg"|condition=="db",
+         dr = condition=="dr"|condition=="db")
+```
+
+Remove invalid responses.
+
+```{r, include=FALSE}
+dat <- dat %>%
+  filter(model_gender != 6,
+         model_race != "")
+```
+
+Problem: how to backfill information that I failed to save in the first half of data collection. I am able to reconstruct participants' genders using a combination of the image gender used and the condition the participant was assigned to. Unfortunately, because there are more than 2 races in the study, I can only reconstruct the participants' races if they were in conditions where the model's race was not changed.
+
+```{r}
+fix_gender <- function (model_gender, condition)  {
+  if (condition=="db"|condition=="dg") {
+    if (model_gender=="1") {
+      2
+    } else {
+      1
+    }
+  } else if (condition=="dr"|condition=="na") {
+    model_gender
+  } 
+}
+
+dat_gen <- dat %>%
+  filter(p_gender=="") %>%
+  mutate(p_gender = as.character(map2(model_gender, condition, fix_gender))) 
+
+dat <- dat %>%
+  filter(p_gender!="") %>%
+  bind_rows(dat_gen)
+
+fix_race <- function (model_race, condition)  {
+  if (condition=="na"|condition=="dg") {
+    model_race
+  } else {
+    NA
+  }
+}
+
+dat_rac <- dat %>%
+  filter(p_race=="") %>%
+  mutate(p_race = as.character(map2(model_race, condition, fix_race)))
+
+dat <- dat %>%
+  filter(p_race!="") %>%
+  bind_rows(dat_rac)
+
+rm(dat_gen)
+rm(dat_rac)
+```
+
+Clean demographics by converting to factors.
+
+```{r}
+clean_rac <- function (race) {
+  if (length(unique(race))==4) {
+    labs = c("white", "black", "latino", "asian")
+  } else {
+    labs = c("asian", "white", "latino", "black", "unknown")
+  }
+  factor(race, 
+         levels = unique(race), 
+         labels = labs
+  )
+}
+
+clean_gen <- function (gender) {
+  factor(gender, 
+         levels = unique(gender), 
+         labels = c("male", "female")
+  )
+}
+
+dat <- dat %>%
+  #we delete nonbinary participants who should have been screened out of the study
+  filter(p_gender!="0") %>%
+  mutate(model_gender = clean_gen(model_gender),
+         model_race = clean_rac(model_race),
+         p_gender = clean_gen(p_gender),
+         p_race = clean_rac(p_race),
+         img = paste(model_race, model_gender, sep = " ")
+  )
+```
+
+### Likert items
+
+Note: R factors are not like other factors. It is not a key-value pair; rather, you can store a categorical variable as an ordinal variable. Do not mess with this formula, it is already pretty much as efficient as it can get.
+
+I've basically fixed my mistakes, except that I still haven't solved that some items where people didn't display the full range of responses are not coded correctly.
+
+```{r}
+dat2 <- dat
+
+#Correct ordering of options
+for (i in seq_along(dat)) {
+  if (length(unique(dat[[i]])) < 10 && typeof(dat[[i]]) == "character") {
+    dat2[[i]] <- case_when(grepl("^Neither", dat[[i]])                     ~ "0",
+                          grepl("^Somewhat", dat[[i]])                     ~ "1",
+                          grepl("^Like|^Agr|^Un|^Dis|^Pos|^Neg", dat[[i]]) ~ "2",
+                          grepl("^Strongly|^Very", dat[[i]])               ~ "3",
+                          TRUE                                             ~ dat[[i]])
+    
+    dat2[[i]] <- case_when(grepl("[Dd]is|[Nn]egative|[Uu]n", dat[[i]])     ~ paste("-", dat2[[i]], sep = ""),
+                          TRUE                                             ~ dat2[[i]])
+  }
+}
+```
+
+```{r}
+#This formula fails to account for ordering of options and thus badly numbers them
+likert <- function(col){
+  # Protect long-response answers that may inadvertently match the Likert cue terms
+  if (sum(str_detect(col, "similar$"), na.rm = TRUE) > 0) {
+      lvls <- sort(unique(col))
+      lbls <- c(1:length(unique(col)))
+      factor(col, lvls, lbls)
+  } else if (sum(str_detect(col, "less$"), na.rm = TRUE) > 0) {
+      lvls <- sort(unique(col))
+      lbls <- c(1:length(unique(col)))
+      factor(col, lvls, lbls)
+  } else if (length(unique(col)) < 10 && typeof(col) == "character" && nchar(col[[1]]) < 3 && nchar(col[[1]]) > 0 && !grepl("d", col)) {
+      col <- as.numeric(col)
+      lvls <- sort(unique(col))
+      if (sum(is.na(col)) > 0) {
+        n <- length(unique(col)) - 1
+        lbls <- c(1:n)
+      } else {
+        lbls <- c(1:length(unique(col)))
+      }
+      factor(col, lvls, lbls)
+  } else {
+    col
+  }
+}
+```
+
+```{r}
+# try case_when or refactor
+
+# Convert Likert items to factors
+
+for (i in seq_along(dat2)) {
+  dat[[i]] <- likert(dat2[[i]])
+}
+```
+
+### Cleaning the presurvey
+
+```{r}
+# Remove dummy rows
+pre <- pre %>%
+  tail(nrow(pre) - 2)
+
+pre <- pre %>% 
+  select(race, gender, major, Gender, Race) %>%
+  filter(Race != "", 
+         Gender != "",
+         Race != "5",
+         Gender != "3") %>%
+  mutate(Race = as.numeric(Race),
+         Gender = as.numeric(Gender),
+         race = factor(Race, levels = unique(Race), labels = unique(race)),
+         gender = factor(Gender, levels = unique(Gender), labels = unique(gender))) %>%
+  rename(major_txt = major)
+```
+
+## Cleaning majors
+
+[Fixing double-barreled answers](https://stackoverflow.com/questions/37224010/string-split-and-duplicate-row-in-r) from Stack Overflow.
+
+I clean the "What is your major?" responses for inconsistent spellings, capitalizations, and abbreviations.
+
+```{r}
+#Define function for cleaning majors
+clean_major <- function(col) {
+  col %>%
+  tolower() %>%
+  str_replace("pre|[\\w ]*ing in ", "") %>%
+  str_replace("-", "") %>%
+  str_replace("&", "and") %>%
+  str_replace("human biology and society", "human biology & society") %>%
+  str_replace("world arts and cultures", "world arts & cultures") %>%
+  str_replace("[\\w, ]*developmental[\\w, ]*|mcdb", "molecular biology") %>%
+  str_replace("microbiology[\\w, ]*|mimg", "microbiology") %>%
+  str_replace("comm[\\w]*", "communications") %>%
+  str_replace("poli[\\w,\\- ]*", "political science") %>%
+  str_replace("socio[\\w]*", "sociology") %>%
+  str_replace("neuro\\w*", "neuroscience") %>%
+  str_replace("cog[\\w ]*", "cognitive science") %>%
+  str_replace("anthro[\\w\\. ]*", "anthropology") %>%
+  str_replace("spanish and linguistics[\\w ]*", "spanish and linguistics") %>%
+  str_replace("computer eng\\w*", "computer engineering") %>%
+  str_replace("phys[\\w ]*", "physiological science") %>%
+  str_replace("psychobio\\w*", "psychobiology") %>%
+  str_replace("psycholog\\w*|psych\\b", "psychology") %>%
+  str_replace("un\\w* social \\w*", "undeclared social sciences") %>%
+  str_replace("general biology", "biology") %>%
+  str_replace("thinking about majoring in economics also", "") %>%
+  str_trim() 
+}
+
+# Clean majors for pre-survey questions
+pre$major_txt <- clean_major(pre$major_txt)
+# Clean majors for study questions
+dat$major_txt <- clean_major(dat$major_txt)
+```
+
+Create an "other" category to better organize data.
+
+```{r}
+dat %>%
+  group_by(major_txt) %>%
+  mutate(n = n()) %>%
+  ungroup() %>%
+  filter(n > 2) %>%
+  arrange(desc(n)) %>%
+  select(major_txt) %>%
+  unique()
+
+other_majors <- dat %>%
+  group_by(major_txt) %>%
+  mutate(n = n()) %>%
+  ungroup() %>%
+  filter(n <= 2) %>%
+  select(major_txt) %>%
+  unique()
+
+dat <- dat %>%
+  mutate(major_txt = case_when((major_txt!="cognitive science" & 
+                                  major_txt!="microbiology" &
+                                  major_txt!="psychobiology" &
+                                  major_txt!="neuroscience" &
+                                  major_txt!="biology" &
+                                  major_txt!="psychology" &
+                                  major_txt!="human biology & society") ~ "other",
+                                  TRUE ~ major_txt))
+```
+
+Create a factor version of major for prediction models.
+
+```{r}
+dat <- dat %>%
+  mutate(major = factor(major_txt, unique(major_txt)))
+```
+
+
+## Measure construction and refinement
+
+I am going to create composite measures for some of our variables of interest. I am okay with this since the measures are within-subject, so a composite would be accurate to each person.
+
+I will create a measure of persistence by summing the `time_*` variables that are not missing. (Not summing the values, only the existence thereof of data.) Therefore, my operational definition of persistence is those trials that students *completed*.
+
+```{r}
+times <- names(select(dat, matches("^time_\\d"))) 
+
+dat$persist <- rowSums(!is.na(dat[times]))
+
+# Binary coding of whether students chose to stop after the first trial (most significant dropoff point)
+dat$dropoff <- dat$persist < 2
+```
+
+Recode persistence as minus 1 from the first trial where students put in less than 2 minutes of effort on the page. 
+
+```{r}
+# We will iterate backwards through the time variables, so that we always 
+# overwrite using the earliest instance
+nms <- rev(names(dat)[grepl("time_\\d", names(dat))])
+
+# Create a repaired persist variable, filling in default values that we 
+# already calculated from before
+dat$persist2 <- dat$persist
+
+# Some students put in an impossibly small amount of effort, so we
+# recode those as trials where they already stopped persisting
+for (n in nms) {
+  # Record the actual persistence as 1 less than the trial for which
+  # they spent less than 20 seconds
+  real_stop <- as.numeric(substr(n, nchar(n), nchar(n)))-1
+  
+  # Create an indicator variable showing whether students spent >20 seconds
+  # on the page
+  # (ignore NA values because these values are already accounted for in
+  # the original variable)
+  dat$temp <- as.numeric(!(dat[n] > 20 | is.na(dat[n])))
+  
+  # For each observation in the indicator, if I indicated that the 
+  # value is invalid, we will replace it with the true value
+  # if not, retain the value existing in that column 
+  # (IMPORTANT: persist is updating throughout so this is NOT the same
+  # as persist2 anymore)
+  for (i in seq_along(dat$temp)) {
+    dat$persist[i] <- ifelse(dat$temp[i]==1, real_stop, dat$persist[i])
+  }
+} 
+
+# Check our results using a few case studies
+dat %>%
+  select(matches("per"), matches("time_")) %>%
+  filter(time_7 < 20)
+```
+
+Composite of manipulation checks:
+
+```{r}
+dat$model_score <- dat %>%
+  select(model_respect, model_friendly, model_like) %>%
+  data.matrix %>%
+  rowMeans()
+```
+
+Create composite attitude scores for pre- and post-activity.
+
+```{r}
+dat$pre_att_act <- dat %>%
+  select(pre_like_act, pre_interest_act) %>%
+  data.matrix %>%
+  rowMeans()
+
+dat$post_att_act <- dat %>%
+  select(post_like_act, post_interest_act) %>%
+  data.matrix %>%
+  rowMeans()
+
+dat$pre_att_cs <- dat %>%
+  select(pre_interest_cs, pre_excite_cs) %>%
+  data.matrix %>%
+  rowMeans()
+
+dat$post_att_cs <- dat %>%
+  select(post_interest_cs, post_excite_cs) %>%
+  data.matrix %>%
+  rowMeans()
+```
+
+Create difference scores for pre and post measures. (Note: this is technically not valid for factors.)
+
+```{r}
+dat <- dat %>%
+  mutate(d_att_cs = as.numeric(post_att_cs) - as.numeric(pre_att_cs),
+         d_att_act = as.numeric(post_att_act) - as.numeric(pre_att_act),
+         d_att_r = as.numeric(post_r_att) - as.numeric(pre_r_att))
+```
+
+## Incorporate textual coding
+
+```{r}
+txt <- read.csv("txtresps_coded.csv")
+
+txt <- mutate_at(txt, names(txt)[2:8], ~ifelse(is.na(.),
+                                              0,
+                                              1))
+
+dat <- left_join(dat, txt)
+
+dat$st_sum <- dat %>%
+  select(matches("^st_")) %>%
+  rowSums()
+```
+
+# Save data
+
+```{r}
+saveRDS(dat, "dat.rds")
+saveRDS(pre, "pre.rds")
+#Already created a text responses output; don't want to overwrite
+#write.csv(select(dat, id, matches("txt")), "txtresps.csv")
+write.csv(opts, "opts.csv")
+```
+
+Check data
+
+```{r}
+# View(dat %>%
+#        arrange(id) %>%
+#        select(id, pre_interest_act))
+# View(dat_orig %>%
+#        arrange(id))
+```
+

@@ -1,0 +1,98 @@
+names,opts
+time,[[0]]
+progress,[[0]]
+seconds,[[0]]
+id,[[0]]
+pre_interest_act,"[[""Agree"",""Disagree"",""Somewhat agree"",""Somewhat disagree"",""Strongly agree"",""Strongly disagree""]]"
+pre_like_act,"[[""Agree"",""Disagree"",""Somewhat agree"",""Somewhat disagree"",""Strongly agree"",""Strongly disagree""]]"
+pre_useful_act,"[[""Agree"",""Disagree"",""Somewhat agree"",""Somewhat disagree"",""Strongly agree"",""Strongly disagree""]]"
+pre_relevant_act,"[[""Agree"",""Disagree"",""Somewhat agree"",""Somewhat disagree"",""Strongly agree"",""Strongly disagree""]]"
+pre_r_att,"[[""Negative"",""Positive"",""Somewhat negative"",""Somewhat positie"",""Strongly negative""]]"
+pre_r_att_txt,[[0]]
+pre_enjoy_cs,"[[""Agree"",""Disagree"",""Somewhat agree"",""Somewhat disagree"",""Strongly agree"",""Strongly disagree""]]"
+pre_learn_cs,"[[""Agree"",""Disagree"",""Somewhat agree"",""Somewhat disagree"",""Strongly agree"",""Strongly disagree""]]"
+pre_course_cs,"[[""Agree"",""Disagree"",""Somewhat agree"",""Somewhat disagree"",""Strongly agree"",""Strongly disagree""]]"
+pre_interest_cs,"[[""Agree"",""Disagree"",""Somewhat agree"",""Somewhat disagree"",""Strongly agree"",""Strongly disagree""]]"
+pre_excite_cs,"[[""Agree"",""Disagree"",""Somewhat agree"",""Somewhat disagree"",""Strongly agree"",""Strongly disagree""]]"
+pre_conf_cs,"[["""",""Agree"",""Disagree"",""Somewhat agree"",""Somewhat disagree"",""Strongly agree"",""Strongly disagree""]]"
+pre_conf_act,"[[""Agree"",""Disagree"",""Somewhat agree"",""Somewhat disagree"",""Strongly agree"",""Strongly disagree""]]"
+time_1,[[0]]
+time_2,[[0]]
+time_3,[[0]]
+time_4,[[0]]
+time_5,[[0]]
+time_6,[[0]]
+time_7,[[0]]
+stereotype_txt,[[0]]
+p_female,"[[""10"",""20"",""30"",""40"",""50""]]"
+p_black,[[0]]
+p_aapi,[[0]]
+p_latino,[[0]]
+p_white,[[0]]
+p_other,[[0]]
+switched,"[[""No"",""Yes""]]"
+switch_txt,[[0]]
+stay_txt,[[0]]
+post_interest_act,"[[""Agree"",""Disagree"",""Somewhat agree"",""Somewhat disagree"",""Strongly agree"",""Strongly disagree""]]"
+post_like_act,"[[""Agree"",""Disagree"",""Somewhat agree"",""Somewhat disagree"",""Strongly agree"",""Strongly disagree""]]"
+post_useful_act,"[[""Agree"",""Disagree"",""Somewhat agree"",""Somewhat disagree"",""Strongly agree"",""Strongly disagree""]]"
+post_relevant_act,"[[""Agree"",""Disagree"",""Somewhat agree"",""Somewhat disagree"",""Strongly agree"",""Strongly disagree""]]"
+cs_xp,"[[""No"",""Yes""]]"
+cs_course_txt,[[0]]
+no_cs_course_txt,[[0]]
+likely_cs_course,"[[""Likely"",""Somewhat likely"",""Somewhat unlikely"",""Unlikely"",""Very likely"",""Very unlikely""]]"
+likely_cs_job,"[[""Likely"",""Somewhat likely"",""Somewhat unlikely"",""Unlikely"",""Very likely"",""Very unlikely""]]"
+likely_self_learn,"[[""Likely"",""Somewhat likely"",""Somewhat unlikely"",""Unlikely"",""Very likely"",""Very unlikely""]]"
+future_txt,[[0]]
+post_r_att,"[[""Negative"",""Positive"",""Somewhat negative"",""Somewhat positive"",""Very negative"",""Very positive""]]"
+post_r_att_txt,[[0]]
+post_interest_cs,"[[""Agree"",""Disagree"",""Somewhat agree"",""Somewhat disagree"",""Strongly agree"",""Strongly disagree""]]"
+post_excite_cs,"[[""Agree"",""Disagree"",""Somewhat agree"",""Somewhat disagree"",""Strongly agree"",""Strongly disagree""]]"
+post_conf_cs,"[[""Agree"",""Disagree"",""Somewhat agree"",""Somewhat disagree"",""Strongly agree"",""Strongly disagree""]]"
+post_conf_act,"[[""Agree"",""Disagree"",""Somewhat agree"",""Somewhat disagree"",""Strongly agree"",""Strongly disagree""]]"
+post_belonging,"[[""Agree"",""Disagree"",""Somewhat agree"",""Somewhat disagree"",""Strongly agree"",""Strongly disagree""]]"
+post_difficult,"[[""Agree"",""Disagree"",""Somewhat agree"",""Somewhat disagree"",""Strongly agree"",""Strongly disagree""]]"
+post_opp_cost,"[[""Agree"",""Disagree"",""Somewhat agree"",""Somewhat disagree"",""Strongly agree"",""Strongly disagree""]]"
+post_stress,"[[""Agree"",""Disagree"",""Somewhat agree"",""Somewhat disagree"",""Strongly agree"",""Strongly disagree""]]"
+post_time_cost,"[[""Agree"",""Disagree"",""Somewhat agree"",""Somewhat disagree"",""Strongly agree"",""Strongly disagree""]]"
+post_growth,"[[""Agree"",""Somewhat agree"",""Somewhat disagree"",""Strongly agree"",""Strongly disagree""]]"
+post_fixed1,"[[""Agree"",""Disagree"",""Somewhat agree"",""Somewhat disagree"",""Strongly agree"",""Strongly disagree""]]"
+post_fixed2,"[[""Agree"",""Disagree"",""Somewhat agree"",""Somewhat disagree"",""Strongly disagree""]]"
+post_fixed3,"[[""Agree"",""Disagree"",""Somewhat agree"",""Somewhat disagree"",""Strongly agree"",""Strongly disagree""]]"
+fit_cs_class,"[[""1 = Not at all similar"",""2"",""3"",""4"",""5""]]"
+fit_cs_job,"[[""1 = Not at all similar"",""2"",""3"",""4""]]"
+fit_cs_skill,"[[""1 = Not at all similar"",""2"",""3"",""4"",""5""]]"
+fit_cs_teach,"[[""1 = Not at all similar"",""2"",""3"",""4""]]"
+fit_cs_major,"[[""1 = Not at all similar"",""2"",""3"",""4"",""5""]]"
+relative_effort,"[[""1 = A lot less"",""2"",""3"",""4"",""5""]]"
+relative_difficult,"[[""1 = A lot less"",""2"",""3"",""4"",""5"",""6 = A lot more""]]"
+relative_school,"[[""1 = A lot less"",""2"",""3"",""4"",""5"",""6 = A lot more""]]"
+year,"[[""Freshman"",""Junior"",""Senior"",""Sophomore""]]"
+hs_usa,"[[""No"",""Yes""]]"
+hs_int,"[["""",""Canada"",""China"",""CHINA"",""France"",""Hong Kong"",""India"",""South Africa "",""South Korea""]]"
+age,[[0]]
+gpa,[[0]]
+major_txt,[[0]]
+transfer,"[[""I am an undergraduate student who began my undergraduate studies at this school"",""I am an undergraduate student who transferred here from another college / university""]]"
+employ,"[[""1-10 hours per week"",""11-20 hours per week"",""21-30 hours per week"",""31-40 hours per week"",""40+ hours per week"",""I don't currently have paid employment""]]"
+help,"[[""No"",""Yes""]]"
+model_similar,"[[""Neither agree nor disagree"",""Somewhat agree"",""Somewhat disagree"",""Strongly agree"",""Strongly disagree""]]"
+model_respect,"[[""Neither agree nor disagree"",""Somewhat agree"",""Strongly agree"",""Strongly disagree""]]"
+model_friendly,"[[""Neither agree nor disagree"",""Somewhat agree"",""Somewhat disagree"",""Strongly agree"",""Strongly disagree""]]"
+model_like,"[[""Neither agree nor disagree"",""Somewhat agree"",""Somewhat disagree"",""Strongly agree"",""Strongly disagree""]]"
+model_txt,[[0]]
+fem_exposure,"[["""",""Neither agree nor disagree"",""Somewhat agree"",""Somewhat disagree"",""Strongly agree""]]"
+race_exposure,"[[""Neither agree nor disagree"",""Somewhat agree"",""Somewhat disagree"",""Strongly agree""]]"
+parents_fem,"[[""Neither agree nor disagree"",""Somewhat agree"",""Somewhat disagree"",""Strongly agree"",""Strongly disagree""]]"
+friends_fem,"[[""Neither agree nor disagree"",""Somewhat agree"",""Somewhat disagree"",""Strongly agree""]]"
+parents_race,"[[""Neither agree nor disagree"",""Somewhat agree"",""Strongly agree"",""Strongly disagree""]]"
+friends_race,"[[""Neither agree nor disagree"",""Somewhat agree"",""Somewhat disagree"",""Strongly agree"",""Strongly disagree""]]"
+friends_cs,"[[""Neither agree nor disagree"",""Somewhat agree"",""Somewhat disagree"",""Strongly agree"",""Strongly disagree""]]"
+mom_cs,"[["""",""Agree"",""Disagree"",""Neither agree nor disagree"",""Strongly Agree"",""Strongly disagree""]]"
+dad_cs,"[["""",""Agree"",""Disagree"",""Neither agree nor disagree"",""Strongly Agree"",""Strongly disagree""]]"
+model_gender,"[[""1"",""2"",""6""]]"
+model_race,"[["""",""1"",""2"",""3"",""4""]]"
+p_gender,"[["""",""0"",""1"",""2""]]"
+p_race,"[["""",""1"",""2"",""3"",""4""]]"
+condition,"[[""db"",""dg"",""dr"",""na""]]"
+img,"[["""",""https://uclapsych.ca1.qualtrics.com/ControlPanel/Graphic.php?IM=IM_3CObt5yCC0PPLxQ"",""https://uclapsych.ca1.qualtrics.com/ControlPanel/Graphic.php?IM=IM_3Q3BKIBseInKDXw"",""https://uclapsych.ca1.qualtrics.com/ControlPanel/Graphic.php?IM=IM_3sll63ZzgxLQ4OG"",""https://uclapsych.ca1.qualtrics.com/ControlPanel/Graphic.php?IM=IM_5nDL7Vd7gZ3yhYW"",""https://uclapsych.ca1.qualtrics.com/ControlPanel/Graphic.php?IM=IM_5sv67HRXyBhhgoe"",""https://uclapsych.ca1.qualtrics.com/ControlPanel/Graphic.php?IM=IM_8J7frGAhJ6agLtA"",""https://uclapsych.ca1.qualtrics.com/ControlPanel/Graphic.php?IM=IM_9EVYjue415Y3Jt4"",""https://uclapsych.ca1.qualtrics.com/ControlPanel/Graphic.php?IM=IM_bdQzjBzrIimtLU2""]]"
